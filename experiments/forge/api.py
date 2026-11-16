@@ -30,6 +30,22 @@ TRAINER_STREAM_BINDINGS = {
     "model_generator": ("noise", "models", "stochastic_layers"),
     "prior_noise_generator": ("noise", "prior", "gaussian"),
 }
+# Recipe-owned trainer streams. Forge binds each only when the resolved recipe
+# consumes it, so every other formulation keeps its named-stream manifest.
+RECIPE_STREAM_BINDINGS = {
+    "energy_generator": ("noise", "energy", "population"),
+}
+
+
+def recipe_stream_bindings(recipe):
+    """The ``RECIPE_STREAM_BINDINGS`` a Recipe (or its ``to_dict()`` form) consumes."""
+    value = recipe.get if isinstance(recipe, dict) else (lambda name: getattr(recipe, name, None))
+    names = []
+    if value("energy_transport_weight") and value("energy_transport_population"):
+        names.append("energy_generator")
+    return {name: RECIPE_STREAM_BINDINGS[name] for name in names}
+
+
 BUILTIN_CAPABILITIES = (
     "public_trainer", "public_components", "scalar_gan", "mog_prior", "particle_cloud", "learned_locations",
     "uniform_masses", "fixed_prior_width", "a2", "checkpoint", "named_rng", "live_sampling",
@@ -330,6 +346,9 @@ def task_policy_blockers(task, candidate):
         return ['unsupported explicit component transport consumer']
     if model_vae_transport and consumer not in (None, 'output_marginal_v1'):
         return ['unsupported explicit model VAE transport consumer']
+    if recipe.energy_transport_weight and task.get("execution", {}).get("execution_path") == "public_components":
+        return [f"{task.get('id', '<task>')}: energy transport over seen-data memory is a GANTrainer objective; "
+                "public_components hosts do not consume it; mechanism is unsupported"]
     if (recipe.kinetic_transport_weight or recipe.kinetic_transport_local_weight) and task.get("execution", {}).get("execution_path") == "public_components" and consumer is None:
         return [f"{task.get('id', '<task>')}: frozen public_components host does not consume "
                 "Recipe kinetic transport sample-space losses; mechanism is unsupported"]
@@ -544,6 +563,9 @@ class FormulationContext:
         self.recipe = resolve_public_recipe({"recipe_preset": recipe_preset,
                                              "recipe_overrides": overrides}, **prior_fields)
         self.prior_config["learnable"] = self.recipe.prior_update == "learned"
+        if execution_path == "public_components" and self.recipe.energy_transport_weight:
+            raise CapabilityError(["energy transport over seen-data memory is a GANTrainer objective; "
+                                   "public_components hosts do not consume it"])
         if execution_path == "public_components" and (self.recipe.kinetic_transport_weight or self.recipe.kinetic_transport_local_weight) and component_transport is None:
             raise CapabilityError(["public_components must explicitly consume Recipe kinetic transport losses; "
                                    "the current Forge host bindings do not support it"])
@@ -796,6 +818,8 @@ class FormulationContext:
             **{name: self.streams.generator(family, component=component, purpose=purpose)
                for name, (family, component, purpose) in TRAINER_STREAM_BINDINGS.items()
                if name != "prior_noise_generator" or use_prior_noise},
+            **{name: self.streams.generator(family, component=component, purpose=purpose)
+               for name, (family, component, purpose) in recipe_stream_bindings(self.recipe).items()},
             "require_latent_damping": self.recipe.latent_damping_max_rate > 0,
             **self.bindings["trainer"],
         }
@@ -803,7 +827,7 @@ class FormulationContext:
             if "max_steps" in options:
                 raise CapabilityError(["execution budget conflicts with trainer extension"])
             options["max_steps"] = max_steps
-        streams = [options[name] for name in TRAINER_STREAM_BINDINGS if name in options]
+        streams = [options[name] for name in (*TRAINER_STREAM_BINDINGS, *RECIPE_STREAM_BINDINGS) if name in options]
         if len({id(stream) for stream in streams}) != len(streams):
             raise CapabilityError(["Forge requires distinct named trainer streams"])
         self._trainer = GANTrainer(self.recipe, generator, discriminator, prior=prior,

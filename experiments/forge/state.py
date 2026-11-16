@@ -24,9 +24,10 @@ def require_same_formulation(original, current):
 
 
 def require_consistent_rng(state):
-    from .api import TRAINER_STREAM_BINDINGS
+    from .api import TRAINER_STREAM_BINDINGS, recipe_stream_bindings
     from .priors import prior_uses_noise_stream
-    required = set(TRAINER_STREAM_BINDINGS)
+    stream_bindings = {**TRAINER_STREAM_BINDINGS, **recipe_stream_bindings(state["recipe"])}
+    required = set(stream_bindings)
     if not prior_uses_noise_stream(state["prior"]):
         required.remove("prior_noise_generator")
     if set(state["trainer"]["streams"]) != required:
@@ -36,7 +37,7 @@ def require_consistent_rng(state):
     if set(bindings) != set(named["states"]):
         raise ValueError("named RNG states and bindings disagree")
     for name, value in state["trainer"]["streams"].items():
-        expected = TRAINER_STREAM_BINDINGS.get(name)
+        expected = stream_bindings.get(name)
         matching = [key for key, binding in bindings.items()
                     if (binding["family"], binding["component"], binding["purpose"]) == expected]
         if len(matching) != 1 or not torch.equal(value, named["states"][matching[0]]):

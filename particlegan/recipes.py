@@ -43,6 +43,10 @@ try:
         rhbi_cond_step_damp=0.0,
         rhbi_ae_coord_whiten=False,
         rhbi_support_completion=False,
+        # Opt-in energy transport; weight 0 disables it with no trace.
+        energy_transport_weight=0.0,
+        energy_transport_memory=0,
+        energy_transport_population=False,
     )
 except (ImportError, ValueError):
     pass
@@ -179,6 +183,15 @@ class Recipe:
     generator_gradient_response: str = "none"
     kinetic_transport_local_weight: float = 0.0
     kinetic_transport_projections: int = 32
+    # Opt-in energy distance (particlegan.energy_transport) from generated
+    # samples to detached seen G-phase targets. Weight 0 disables it entirely.
+    # memory 0 = the current G-phase target batch; M > 0 = a FIFO of the M most
+    # recent G-phase targets, current batch included (no extra data draws).
+    # population = one draw per prior row through the training latent law, from
+    # the trainer's own checkpointed energy stream, instead of the G batch.
+    energy_transport_weight: float = 0.0
+    energy_transport_memory: int = 0
+    energy_transport_population: bool = False
     # AMSGrad for every recipe optimizer (G, prior and critic). Intended for a
     # G/D LR that stays high: the Adam step then shrinks with the gradient at
     # equilibrium instead of creeping up as the second moment decays. The
@@ -763,6 +776,28 @@ class Recipe:
             raise ValueError(f"kappa_radial must be positive, got {self.kappa_radial}")
         if type(self.kinetic_transport_projections) is not int or self.kinetic_transport_projections < 1:
             raise ValueError("kinetic_transport_projections must be a positive integer")
+        if (type(self.energy_transport_weight) not in (int, float)
+                or not math.isfinite(self.energy_transport_weight) or self.energy_transport_weight < 0):
+            raise ValueError("energy_transport_weight must be finite and nonnegative")
+        if type(self.energy_transport_memory) is not int or self.energy_transport_memory < 0:
+            raise ValueError("energy_transport_memory must be a nonnegative integer")
+        if type(self.energy_transport_population) is not bool:
+            raise ValueError("energy_transport_population must be a boolean")
+        if not self.energy_transport_weight and (self.energy_transport_memory or self.energy_transport_population):
+            raise ValueError("energy_transport_memory/energy_transport_population require "
+                             "energy_transport_weight > 0; weight 0 disables the objective entirely")
+        if self.energy_transport_weight and (self.energy_transport_memory == 1 or self.batch_size < 2):
+            # The objective is normalized by the target set's spread; a one-row
+            # target set has none, so it would raise on every update.
+            raise ValueError("energy transport needs at least two target rows: energy_transport_memory "
+                             "must be 0 or >= 2 and batch_size must be >= 2")
+        if self.energy_transport_weight and (self.model != "gan" or self.conditioning != "scalar"
+                                             or self.encoder_mode != "none"
+                                             or self.row_policy != "independent"):
+            # GANTrainer is the only consumer; encoder, DDGAN and routed-row hosts own
+            # their loops and would otherwise drop the objective without trace.
+            raise ValueError("energy_transport_weight requires the GANTrainer envelope: model='gan', "
+                             "conditioning='scalar', encoder_mode='none', row_policy='independent'")
         if type(self.amsgrad) is not bool:
             raise ValueError("amsgrad must be a boolean")
         for key in ("critic_r1_real", "critic_payoff_damping"):
@@ -879,6 +914,8 @@ class Recipe:
         result = without_default_additions(asdict(self))
         if "kinetic_transport_local_weight" in result:
             result["kinetic_transport_local_weight"] = float(result["kinetic_transport_local_weight"])
+        if "energy_transport_weight" in result:
+            result["energy_transport_weight"] = float(result["energy_transport_weight"])
         if self.loss == "relativistic":
             # Older recipes/checkpoints had this one fixed objective. Preserve
             # their packets while recording every alternative explicitly.
@@ -1074,6 +1111,21 @@ class Recipe:
             return fake.new_zeros(())
         from .kinetic_transport import kinetic_transport_local_loss
         return weight * kinetic_transport_local_loss(fake, real)
+
+    def energy_transport_loss(self, fake, target):
+        """Weighted energy transport from generated ``fake`` to detached ``target`` rows.
+
+        ``particlegan.energy_transport`` defines the scale-normalized objective.
+        ``GANTrainer`` supplies the target set (current G-phase batch or its
+        seen-target FIFO) and the generated set (G batch or prior population).
+        Caller-owned loops that enable the weight must bind both themselves.
+        Returns an exact zero without evaluating anything at weight 0.
+        """
+        weight = float(self.energy_transport_weight)
+        if weight <= 0:
+            return fake.new_zeros(())
+        from .energy_transport import energy_transport_loss
+        return weight * energy_transport_loss(fake, target)
 
     def make_critic_penalty(self, optimizer, *, output=None, collect_stats=False, **penalty_overrides):
         """The critic gradient penalty paired with one critic optimizer.

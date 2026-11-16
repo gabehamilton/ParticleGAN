@@ -553,11 +553,17 @@ class _PacGANBaseFixture:
     def rebind_trainer(self, recipe: Recipe | str, prior: nn.Module | None = None) -> None:
         """Bind or rebind a ParticleGAN Recipe and optional custom prior (e.g. ManipulatedPrior)."""
         if isinstance(recipe, str):
-            self.recipe = get_recipe(recipe)
+            resolved = get_recipe(recipe)
         elif isinstance(recipe, Recipe):
-            self.recipe = recipe
+            resolved = recipe
         else:
             raise TypeError(f"Expected Recipe or str, got {type(recipe)!r}")
+        if resolved.energy_transport_weight:
+            # This caller-owned loop does not bind Recipe.energy_transport_loss.
+            from .api_contract import UnsupportedRecipeOverrides
+            raise UnsupportedRecipeOverrides("PacGAN host does not consume energy_transport_weight "
+                                             "(a GANTrainer objective)")
+        self.recipe = resolved
         self.recipe_name = self.recipe.name
 
         if prior is not None:

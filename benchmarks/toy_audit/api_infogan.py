@@ -517,7 +517,13 @@ class InfoGANAnisotropicFixture:
         """Bind or rebind recipe and prior across all 8 ParticleGAN trainer families."""
         if prior is not None:
             self.prior = prior.to(self.device)
-        self.recipe = self._resolve_recipe(recipe)
+        resolved = self._resolve_recipe(recipe)
+        if resolved.energy_transport_weight:
+            # This caller-owned loop does not bind Recipe.energy_transport_loss.
+            from .api_contract import UnsupportedRecipeOverrides
+            raise UnsupportedRecipeOverrides("InfoGAN host does not consume energy_transport_weight "
+                                             "(a GANTrainer objective)")
+        self.recipe = resolved
 
         base_prior = unwrap_prior(self.prior)
         if self.recipe.prior_update == "learned" and hasattr(base_prior, "z") and not base_prior.z.requires_grad:

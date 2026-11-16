@@ -461,6 +461,11 @@ class CycleGANConstellationFixture:
 
     def rebind_trainer(self, recipe: Recipe, prior: nn.Module | None = None) -> None:
         """Bind or rebind a ParticleGAN Recipe and optional prior to the CycleGAN bundles."""
+        if recipe.energy_transport_weight:
+            # This caller-owned loop does not bind Recipe.energy_transport_loss.
+            from .api_contract import UnsupportedRecipeOverrides
+            raise UnsupportedRecipeOverrides("CycleGAN host does not consume energy_transport_weight "
+                                             "(a GANTrainer objective)")
         self.recipe = recipe
         if prior is not None:
             self.prior = prior.to(self.device)

@@ -975,7 +975,8 @@ class VectorFixture:
             unsupported = [name for name in (
                 "continuous_policy", "row_evidence_gate", "particle_birth_death", "serve_average",
                 "input_noise_std", "output_noise_std", "latent_damping_max_rate",
-                "kinetic_transport_weight", "kinetic_transport_local_weight") if getattr(self.recipe, name)]
+                "kinetic_transport_weight", "kinetic_transport_local_weight",
+                "energy_transport_weight") if getattr(self.recipe, name)]
             if self.recipe.lr_control == "stationarity":
                 unsupported.append("lr_control=stationarity")
             for name, inactive in (("output_noise_mode", "fixed"), ("generator_gradient_response", "none"),

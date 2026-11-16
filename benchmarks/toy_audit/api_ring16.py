@@ -666,7 +666,7 @@ class Ring16BiGANFixture:
         unsupported = [name for name in (
             "continuous_policy", "row_evidence_gate", "particle_birth_death", "serve_average",
             "input_noise_std", "output_noise_std", "kinetic_transport_weight", "kinetic_transport_local_weight",
-            "reopen_guard"
+            "reopen_guard", "energy_transport_weight"
         ) if getattr(recipe, name)]
         if recipe.lr_control == "stationarity":
             unsupported.append("lr_control=stationarity")

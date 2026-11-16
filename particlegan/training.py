@@ -99,6 +99,11 @@ class InputNoise(nn.Module):
         return out
 
 
+# The energy-transport population stream is seeded at trainer seed + 9 (policy
+# streams use +2..+5; prior noise/birth-death +6, input noise +7, model +8).
+ENERGY_STREAM_OFFSET = 9
+
+
 # Fields added to Recipe after checkpoints were written, with the value that
 # reproduces the older behaviour; a saved recipe without them is upgraded.
 def _normalized_recipe(recipe):
@@ -198,6 +203,18 @@ class GANTrainer:
     records this constraint, and unmarked or False historical checkpoints
     require their original source. The caller's autograd mode is restored.
 
+    ``recipe.energy_transport_weight > 0`` adds the declared energy objective
+    (``particlegan.energy_transport``) to the G/prior loss. Its target set is
+    the G-phase real batch or, with ``energy_transport_memory = M``, a FIFO of
+    the M most recent G-phase real rows (pushed before evaluation). With
+    ``energy_transport_population`` the generated side is one draw per prior
+    row through the training latent law, using ``energy_generator`` for any
+    kernel, DV12 or output noise; the other streams are untouched. Pass
+    ``energy_generator`` to bind a caller-owned stream (it must be separate
+    from every other trainer stream); otherwise the trainer seeds its own at
+    ``seed + ENERGY_STREAM_OFFSET``. Passing it without population mode is
+    rejected. The FIFO and stream travel with checkpoints.
+
     ``row_evidence_statistic`` is forwarded to ``UpdatePolicy`` (legacy
     ``"sphericity"`` by default; ``"hotelling"`` is a declared candidate).
     KA2's ``trust_mode`` candidate is selected with
@@ -224,7 +241,7 @@ class GANTrainer:
                  latent_generator=None, penalty_generator=None,
                  noise_generator=None, input_noise_generator=None,
                  prior_noise_generator=None, eval_generator=None, model_generator=None,
-                 require_latent_damping=None, max_steps=None,
+                 energy_generator=None, require_latent_damping=None, max_steps=None,
                  optimizer_options=None, penalty_options=None, serial_backward=True,
                  row_evidence_statistic="sphericity", serve_after_step=True):
         if not isinstance(recipe, Recipe):
@@ -284,6 +301,9 @@ class GANTrainer:
         has_prior_noise = is_mog or has_normal_noise
         if prior_noise_generator is not None and not has_prior_noise:
             raise ValueError("prior_noise_generator requires a MoG prior or normal noise manipulator")
+        if energy_generator is not None and not (recipe.energy_transport_weight
+                                                 and recipe.energy_transport_population):
+            raise ValueError("energy_generator is consumed only by energy_transport_population")
         if self.prior.z.shape != (recipe.num_particles, recipe.z_dim):
             raise ValueError("prior dimensions must match the recipe")
         if not any(p.requires_grad for p in discriminator.parameters()):
@@ -335,7 +355,7 @@ class GANTrainer:
             bind_rhbi_record(self.opt_d.record, self.loss, self.prior_regularizer)
         if eval_generator is not None and any(eval_generator is stream for stream in (
                 latent_generator, penalty_generator, noise_generator, input_noise_generator,
-                prior_noise_generator, model_generator)):
+                prior_noise_generator, model_generator, energy_generator)):
             raise ValueError("evaluation stream must be separate from training")
         self.policy = UpdatePolicy(
             recipe, self.G, self.D, prior=self.prior,
@@ -364,6 +384,22 @@ class GANTrainer:
         if model_generator is not None:
             self.model_generator = self._stream(model_generator, seed + 8)
             self._STREAMS += ("model_generator",)
+        # Energy transport (recipe-owned objective): seen-target FIFO and the
+        # population draw stream. Weight 0 allocates neither and draws nothing.
+        self._energy_memory = None
+        self.energy_generator = None
+        if recipe.energy_transport_weight:
+            if recipe.energy_transport_memory:
+                from .energy_transport import SeenTargetMemory
+                self._energy_memory = SeenTargetMemory(recipe.energy_transport_memory)
+            if recipe.energy_transport_population:
+                if getattr(self.prior, "_samplers", ()):
+                    raise ValueError("energy_transport_population draws every prior row once under the uniform "
+                                     "row law; a manipulator index sampler declares a different row law")
+                self.energy_generator = self._stream(energy_generator, seed + ENERGY_STREAM_OFFSET)
+                if any(getattr(self, name) is self.energy_generator for name in self._STREAMS):
+                    raise ValueError("energy_generator must be separate from the other trainer streams")
+                self._STREAMS += ("energy_generator",)
         training_streams = [getattr(self, name) for name in self._STREAMS if name != "eval_generator"]
         if self.eval_generator in training_streams:
             raise ValueError("evaluation stream must be separate from training")
@@ -505,6 +541,42 @@ class GANTrainer:
                                      noise_generator=self.prior_noise_generator)
         return self.prior.sample(n, generator=self.latent_generator)
 
+    def _sample_energy_population(self):
+        """Every prior row exactly once (rows 0..N-1) under the training code law.
+
+        Index enumeration consumes no RNG. MoG kernel noise, fresh-Gaussian
+        codes and prior-noise manipulators draw from ``energy_generator`` only.
+        """
+        return self.prior.sample(self.prior.z.shape[0], generator=self.energy_generator, fixed_first_n=True)
+
+    def energy_transport_memory(self):
+        """Seen-target FIFO rows, oldest first (``None`` without memory or before the first update)."""
+        return None if self._energy_memory is None else self._energy_memory.contents()
+
+    def _energy_transport_state(self):
+        return {"memory_capacity": self.recipe.energy_transport_memory,
+                "population": self.recipe.energy_transport_population,
+                "memory": None if self._energy_memory is None else self._energy_memory.state_dict()}
+
+    def _check_energy_transport_state(self, state):
+        """Validate saved energy-transport state against this recipe without mutation."""
+        saved = state.get("energy_transport")
+        if not self.recipe.energy_transport_weight:
+            if "energy_transport" in state:
+                raise ValueError("checkpoint carries energy transport state that this recipe does not enable")
+            return
+        if not isinstance(saved, dict) or set(saved) != {"memory_capacity", "population", "memory"}:
+            raise ValueError("checkpoint energy transport state is incomplete")
+        if (saved["memory_capacity"] != self.recipe.energy_transport_memory
+                or type(saved["memory_capacity"]) is not int
+                or saved["population"] is not self.recipe.energy_transport_population):
+            raise ValueError("checkpoint energy transport memory size or population mode differs from the recipe")
+        if self._energy_memory is None:
+            if saved["memory"] is not None:
+                raise ValueError("checkpoint energy transport memory differs from the recipe")
+        else:
+            self._energy_memory.check_state(saved["memory"], dtype=self.dtype)
+
     def extend_execution(self, max_total_steps):
         """Raise the external execution cap without changing recipe schedules."""
         if (type(max_total_steps) is not int or max_total_steps <= self.completed_steps
@@ -627,6 +699,23 @@ class GANTrainer:
                     curve_settle=recipe.rhbi_simplex_curve_settle,
                 )
                 loss_g = loss_g + simplex_loss
+            energy = energy_terms = None
+            if recipe.energy_transport_weight:
+                from .energy_transport import energy_transport_terms
+                energy_target = real_g
+                if self._energy_memory is not None:
+                    # Push the consumed G-phase targets first, then evaluate.
+                    self._energy_memory.push(real_g)
+                    energy_target = self._energy_memory.targets()
+                if recipe.energy_transport_population:
+                    population, population_rows = self._sample_energy_population()
+                    energy_fake = self._postprocess(self.prior, self._generate(
+                        self.G, population, sigma_out, self.energy_generator, rows=population_rows))
+                else:
+                    energy_fake = fake_g
+                energy_terms = energy_transport_terms(energy_fake, energy_target)
+                energy = recipe.energy_transport_weight * energy_terms.loss
+                loss_g = loss_g + energy
             self.opt_g.zero_grad()
             protected_evaluator = None
             if recipe.constraint_geometry_mode == "strict_progress":
@@ -695,6 +784,12 @@ class GANTrainer:
             result["kinetic_transport_local"] = transport_local.detach()
         if simplex_loss is not None:
             result["rhbi_simplex"] = simplex_loss.detach()
+        if energy is not None:
+            result["energy_transport"] = energy.detach()
+            result["energy_transport_stats"] = {
+                "energy": energy_terms.loss.detach(), "cross": energy_terms.cross.detach(),
+                "fake_self": energy_terms.fake_self.detach(), "scale": energy_terms.scale.detach(),
+                "generated": len(energy_fake), "targets": len(energy_target)}
         if collect_stats:
             result["penalty_stats"] = penalty_stats
         return result
@@ -793,6 +888,8 @@ class GANTrainer:
                if self.policy.reopen_guard is not None else {}),
             **({"gradient_response": self._gradient_response.state_dict()}
                if self._gradient_response is not None else {}),
+            **({"energy_transport": self._energy_transport_state()}
+               if self.recipe.energy_transport_weight else {}),
         })
 
     def _check_checkpoint_boundary(self):
@@ -835,6 +932,9 @@ class GANTrainer:
         if self._gradient_response is not None and isinstance(state, dict) and "gradient_response" not in state:
             raise ValueError("checkpoint lacks gradient response history; resume it with its original source "
                              "or start a new run; exact continuation cannot reconstruct omitted history")
+        if isinstance(state, dict) and (bool(self.recipe.energy_transport_weight) != ("energy_transport" in state)):
+            raise ValueError("checkpoint energy transport state is missing or not enabled by this recipe; "
+                             "exact continuation cannot reconstruct an omitted seen-target memory or energy stream")
         allowed = [set(expected), set(expected) - {"policy"}]
         if self.policy.loss_surprise is not None:
             allowed.extend([s - {"loss_surprise"} for s in list(allowed)])
@@ -850,6 +950,7 @@ class GANTrainer:
         if not isinstance(saved_recipe, dict) or _normalized_recipe(saved_recipe) != _normalized_recipe(expected["recipe"]):
             raise ValueError("checkpoint recipe does not match trainer")
         self.recipe.restore_prior_regularizer(self.prior_regularizer, state.get("prior_regularizer"), validate_only=True)
+        self._check_energy_transport_state(state)
         for key in ("optimizer_options", "penalty_options", "device", "dtype", "requires_grad"):
             if state[key] != expected[key]:
                 raise ValueError(f"checkpoint {key} does not match trainer")
@@ -1002,6 +1103,8 @@ class GANTrainer:
                                                      completed_steps=state["completed_steps"],
                                                      anchor_started=self.policy._loss_epoch(state["optimizers"][1]))
         self._gradient_response = gradient_response
+        if self._energy_memory is not None:
+            self._energy_memory.load_state_dict(state["energy_transport"]["memory"], device=self.device, dtype=self.dtype)
         self.initial_lrs, self.completed_steps = deepcopy(rates), steps
         self.last_output_sigma = None if metadata is None else metadata["last_output_sigma"]
         for name, value in state["streams"].items():

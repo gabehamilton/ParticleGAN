@@ -482,7 +482,13 @@ class CramerGANOverlapFixture:
         """Bind or rebind any of the 8 ParticleGAN trainer families and prior types."""
         if prior is not None:
             self.prior = prior.to(self.device)
-        self.recipe = self._resolve_recipe(recipe, self.prior)
+        resolved = self._resolve_recipe(recipe, self.prior)
+        if resolved.energy_transport_weight:
+            # This caller-owned loop does not bind Recipe.energy_transport_loss.
+            from .api_contract import UnsupportedRecipeOverrides
+            raise UnsupportedRecipeOverrides("Cramer GAN host does not consume energy_transport_weight "
+                                             "(a GANTrainer objective)")
+        self.recipe = resolved
         ema_critic = deepcopy(self.D) if self.recipe.effective_critic_formulation != "bispf" else None
         self.opt_g, self.opt_d = self.recipe.make_optimizers(
             self.G,

@@ -548,6 +548,103 @@ stream); schema 1–3 checkpoints come from older formulations and raise
 `opt_g.step()` as usual. See [regularization factories](#regularization-factories). `learning_rate_scales(step, recipe)` returns the
 `(network, prior)` LR multipliers.
 
+### Energy transport over seen-data memory
+
+`energy_transport_weight`, `energy_transport_memory` and
+`energy_transport_population` declare an opt-in **training objective** for the
+G/prior update. It is not an evaluator, sampler, serving rule or
+post-optimizer repair: it adds one weighted term to `loss_g` and changes
+nothing else. Weight `0` (the default) disables it entirely: the trainer
+allocates no memory, creates no stream, draws no random numbers, writes no
+checkpoint entry and serializes the recipe without these fields, so
+trajectories are bit-identical to the recipe without them. Nonzero
+`energy_transport_memory` or `energy_transport_population` with weight `0` is
+rejected. The three fields are Forge technique fields, not search knobs.
+
+For generated rows `x` and detached target rows `y`, flattened per sample,
+`particlegan.energy_transport.energy_transport_loss(x, y)` is
+
+```text
+E(x, y) = (2 * mean_ij rho(x_i - y_j) - mean_ii' rho(x_i - x_i')) / s
+rho(v)  = sqrt(||v||^2 + (1e-6 * s)^2)
+s       = sqrt(mean_j ||y_j - mean(y)||^2)   # detached
+```
+
+A target set with fewer than two rows, or with `s <= finfo(dtype).eps` (for
+example identical rows), has no usable scale and raises `ValueError`. The
+objective is never divided by a clamped near-zero scale, so a degenerate batch
+is reported as an error instead of producing a huge update. A recipe with a
+positive weight also requires `batch_size >= 2` and `energy_transport_memory`
+of `0` or at least `2`.
+
+Distances use `torch.cdist(..., compute_mode="donot_use_mm_for_euclid_dist")`.
+The `x`–`x` mean runs over all ordered pairs, including the diagonal. The
+smoothing makes the gradient `v / rho(v)` continuous and exactly zero for
+coincident points. Because the smoothing scales with `s`, the objective is
+invariant to a common rescaling of `x` and `y`. The constant `y`–`y` term of the
+energy distance is omitted, not computed. `y` is detached; gradients reach G and
+prior rows only through `x`, by ordinary autograd. `Recipe.energy_transport_loss(fake,
+target)` returns the weighted term (an exact zero at weight 0) for caller-owned loops.
+
+`GANTrainer` binds both sets inside the G phase:
+
+- **Target set.** `energy_transport_memory = 0` uses the current G-phase real
+  batch (`generator_real`, or `real` when it is omitted). `M > 0` uses a FIFO of
+  the `M` most recent G-phase real rows the trainer has already consumed. The
+  current batch is pushed first, then the objective is evaluated. A batch of at
+  least `M` rows keeps its last `M`. There are no extra data draws, and the seen
+  batch sequence is unchanged. `trainer.energy_transport_memory()` returns the
+  rows, oldest first.
+- **Generated set.** With `energy_transport_population = False` it is the
+  ordinary G-phase fake batch. With `True` it is one draw for every prior row
+  `0..N-1`, exactly once per update, through the same generation path as that
+  batch. The path covers manipulator transforms, MoG kernel noise (component
+  mean plus its own Gaussian draw), DV12 or feature-cell latent perturbation,
+  the current output noise and output postprocessing. Every random draw comes
+  from the trainer's `energy_generator`. Pass `GANTrainer(...,
+  energy_generator=stream)` to bind a caller-owned stream, which must be
+  separate from every other trainer stream and is rejected without population
+  mode. Otherwise the trainer seeds its own with
+  `seed + particlegan.training.ENERGY_STREAM_OFFSET` (9). Forge binds it as the
+  named stream `("noise", "energy", "population")`, and only for recipes that
+  enable population mode. The latent, output-noise,
+  prior-noise, input-noise, penalty, evaluation and model streams are untouched,
+  so the critic and G-batch sequences are unchanged. Population draws count as
+  sampled rows for row-local optimizers. Manipulator index samplers declare a
+  different row law and are rejected.
+
+`step` reports `energy_transport` (the weighted term) and
+`energy_transport_stats`, which holds the unweighted `energy`, the scaled
+`cross` and `fake_self` means, the `scale` `s`, and the `generated` and `targets`
+row counts. The checkpoint stores an `energy_transport` entry containing the
+memory size, the population flag, the complete FIFO buffer, its fill count and
+its write position. It also stores `energy_generator` under `streams`.
+`load_state_dict` rejects a checkpoint with these problems before changing
+anything:
+
+- the entry is missing for an enabled recipe;
+- the entry is present for a disabled recipe;
+- the memory size, population mode or buffer differs;
+- `energy_generator` is missing.
+
+It never reconstructs omitted history. `GANTrainer` is the only consumer. A
+recipe with a positive weight outside its envelope (`model="gan"`,
+`conditioning="scalar"`, `encoder_mode="none"`, `row_policy="independent"`) is
+rejected at construction. Forge rejects it on `public_components` paths. These
+caller-owned toy hosts own their loops and refuse it as an unsupported mechanism
+(BLOCKED): the half-frequency vector hosts, the ring16 BiGAN hosts, the
+conditional MisGAN fixtures in `api_conditionals`, and the cGAN-overlap,
+CycleGAN, Cramer GAN, InfoGAN and PacGAN hosts.
+
+Two caller-owned hosts do **not** refuse it yet, because their sources are
+pinned byte for byte by integrated task cards: the MisGAN model host
+(`benchmarks/toy_audit/api_model_misgan.py`) and the `api_images` joint-word
+host. Both accept a scalar-GAN recipe, so a positive weight passes the recipe
+envelope check, and then their loops never evaluate the objective. Do not run
+an energy recipe on either host: any such result has silently dropped the
+mechanism and must be recorded as BLOCKED, not as an energy-transport result.
+The refusal can be added once a new source-binding layer unpins those files.
+
 ### Optional vector discriminators
 
 `BatchDistanceDiscriminator(in_dim=2, hidden_dim=96, n_hidden=3,

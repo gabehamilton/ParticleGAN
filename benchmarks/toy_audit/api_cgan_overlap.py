@@ -364,16 +364,23 @@ class ProjectionConditionalDiscriminator(nn.Module):
 
 def _resolve_recipe(case: dict, recipe_name: str | None = "bispf", recipe: Recipe | str | None = None) -> Recipe:
     if isinstance(recipe, Recipe):
-        return recipe
-    selected = recipe if isinstance(recipe, str) else (recipe_name or case.get("default_recipe", "bispf"))
-    overrides = {
-        "batch_size": case.get("batch_size", 256),
-        "z_dim": 2,
-        "num_particles": 256,
-    }
-    if selected not in ("e22", "atlas", "e22_routed"):
-        overrides["total_steps"] = case.get("default_steps", 3000)
-    return get_recipe(selected, **overrides)
+        resolved = recipe
+    else:
+        selected = recipe if isinstance(recipe, str) else (recipe_name or case.get("default_recipe", "bispf"))
+        overrides = {
+            "batch_size": case.get("batch_size", 256),
+            "z_dim": 2,
+            "num_particles": 256,
+        }
+        if selected not in ("e22", "atlas", "e22_routed"):
+            overrides["total_steps"] = case.get("default_steps", 3000)
+        resolved = get_recipe(selected, **overrides)
+    if resolved.energy_transport_weight:
+        # This caller-owned loop does not bind Recipe.energy_transport_loss.
+        from .api_contract import UnsupportedRecipeOverrides
+        raise UnsupportedRecipeOverrides("conditional GAN overlap host does not consume "
+                                         "energy_transport_weight (a GANTrainer objective)")
+    return resolved
 
 
 class CGANOverlapFixture:

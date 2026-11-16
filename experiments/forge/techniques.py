@@ -133,6 +133,9 @@ def technique_signature(value):
         mechanisms["rhbi_cvx_mu"] = True
     if recipe.rhbi_weight > 0 and recipe.rhbi_thermal_tau > 0 and recipe.rhbi_tail_spill_gain > 0:
         mechanisms["rhbi_tail_spill"] = True
+    if recipe.energy_transport_weight > 0:
+        mechanisms["energy_transport"] = {"memory": recipe.energy_transport_memory,
+                                          "population": recipe.energy_transport_population}
     if recipe.optimizer_smoothing:
         mechanisms["smoothed_dualnorm"] = True
     if recipe.optimizer_family in {"dualnorm_D_only", "particle_rownorm_only"}:
@@ -313,4 +316,6 @@ def recipe_field_active(name, value, *, task=None):
         return recipe.rhbi_weight > 0 and recipe.rhbi_thermal_tau > 0
     if name in {"rhbi_rho", "rhbi_tau", "rhbi_eps", "rhbi_iters", "rhbi_c_max", "rhbi_beta_ell", "rhbi_nn_quantile", "rhbi_rapidity_screening", "rhbi_scale_log_odds", "rhbi_conditional_fibre"}:
         return recipe.rhbi_weight > 0 or recipe.rhbi_critic_weight > 0
+    if name in {"energy_transport_weight", "energy_transport_memory", "energy_transport_population"}:
+        return recipe.energy_transport_weight > 0
     return True
