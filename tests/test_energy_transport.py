@@ -151,6 +151,9 @@ def test_degenerate_target_sets_are_rejected_not_divided_by_eps():
             energy_transport_terms(x, target)
     with pytest.raises(ValueError, match="no spread"):
         energy_transport_terms(x, torch.full((16, 2), float("nan")))
+    for fields in (dict(energy_transport_memory=1), dict(batch_size=1)):
+        with pytest.raises(ValueError, match="at least two target rows"):
+            get_recipe("k3p_energy", **fields)
     # The trainer reports the degenerate batch as an error, never a corrupted update.
     trainer = make_trainer(memory=0)
     point = torch.tensor([[3., 0.]]).repeat(BATCH, 1)
@@ -193,6 +196,38 @@ def test_recipe_fields_validate_and_serialize():
     assert candidate_revision_for("0" * 64, candidate(on)) != candidate_revision_for(
         "0" * 64, candidate({**on, "energy_transport_weight": 0., "energy_transport_memory": 0,
                              "energy_transport_population": False}))
+
+
+def test_energy_transport_is_refused_outside_the_gantrainer_envelope():
+    # Encoder, DDGAN and routed-row hosts own their loops; none consumes the
+    # objective, so the recipe refuses instead of letting it drop silently.
+    for envelope in (dict(model="ddgan"), dict(row_policy="routed_paired"),
+                     dict(conditioning="conditional", num_classes=4)):
+        with pytest.raises(ValueError, match="GANTrainer envelope"):
+            get_recipe("k3p_energy").replace(**envelope)
+    from benchmarks.toy_audit import api_model_ae  # encoder_mode="ae" host
+    case = next(iter(api_model_ae.CASES))
+    with pytest.raises(ValueError, match="GANTrainer envelope"):
+        api_model_ae.task_recipe({"id": case}, recipe_name="k3p_energy")
+
+
+@pytest.mark.parametrize("module, case_id", [
+    ("api_ring16", "api-ring16-bigan-continuous"),
+    ("api_conditionals", "api-misgan-block-recovery"),
+    ("api_cgan_overlap", "api-cgan-overlapping-classes"),
+    ("api_cyclegan", "api-cyclegan-unpaired-constellation"),
+    ("api_cramergan", "api-cramer-energy-overlap"),
+    ("api_infogan", "api-infogan-anisotropic-modes"),
+    ("api_pacgan", "api-pacgan-unequal-mass"),
+])
+def test_caller_owned_scalar_gan_hosts_block_instead_of_dropping_energy(module, case_id):
+    # These hosts own their training loops and do not bind
+    # Recipe.energy_transport_loss; a k3p_energy request is BLOCKED.
+    import importlib
+    from benchmarks.toy_audit.api_contract import UnsupportedRecipeOverrides
+    host = importlib.import_module(f"benchmarks.toy_audit.{module}")
+    with pytest.raises(UnsupportedRecipeOverrides, match="energy_transport_weight"):
+        host.build_case(case_id, device="cpu", seed=0, recipe_name="k3p_energy")
 
 
 # (b) Weight 0 is fully off.

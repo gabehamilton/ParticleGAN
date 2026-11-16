@@ -1365,6 +1365,7 @@ get_recipe("rhbi_optimized", **overrides) # Selected RHBI/DualNorm/polar_cpu_v1 
 get_recipe("rhbi", **overrides) # Original RHBI (rhbi-v1) preset.
 get_recipe("empf", **overrides) # Explicit EMPF/DualNorm/newton_schulz_hybrid_v1 recipe.
 get_recipe("ka2", **overrides) # Previous public trainer, explicitly pinned.
+get_recipe("k3p_energy", **overrides) # k3p + declared energy-transport delta; a failing native baseline.
 get_recipe("ae_gan", trainer="ka2", **overrides) # Model with a pinned trainer.
 get_recipe("bcap", **overrides) # Fixed BCAP, direction blend, constant DualNorm rates.
 get_recipe("bcap_adam", **overrides) # Earlier fixed BCAP/native Adam control.
@@ -1474,6 +1475,7 @@ and fields are rejected. Restore a complete saved configuration with
 | `bcap` | Scalar GAN, 20,000 particles, latent dimension 2; fixed BCAP, direction blending and DualNorm at constant rates |
 | `bcap_adam` | Earlier pure fixed BCAP preset with native Adam and constant rates |
 | `halloween` | Scalar GAN; distinct G/D rates, moments and epsilon, dense TensorFlow-v1 Adam, least-squares labels `(-1,1,1)`, constant rates and zero critic penalty |
+| `k3p_energy` | `k3p` plus a declared delta: energy transport weight 300 over a 4,096-row seen-data memory and the full prior population, zero output noise, `lr_anneal_start=.2`, `lr_floor=.01`, `network_lr_floor=.001` |
 | `e22` | Scalar GAN, 20,000 particles, latent dimension 2, batch 2,048; E22 controls with learned output noise initially .029 |
 | `e22_routed` | Same E22 controls with `row_policy="routed_paired"`; requires explicit context/routing/feature callbacks and guard observations |
 | `mog` | GAN, 400 MoG components, latent dimension 2, relative sigma .025 |
@@ -1488,6 +1490,29 @@ distance and temperature .125; the others use sum distance and temperature .25.
 These component choices retain the original API's model-family structure with
 the new shared hyperparameters. The GAN development-suite evidence does not
 establish convergence of those hyperparameters for every AE/VAE/DDGAN setup.
+
+`k3p_energy` is a named native baseline, declared as this delta against `k3p`
+(every other field is `k3p`'s):
+
+| Field | `k3p` | `k3p_energy` |
+| --- | --- | --- |
+| `energy_transport_weight` | `0` | `300` |
+| `energy_transport_memory` | `0` | `4096` |
+| `energy_transport_population` | `False` | `True` |
+| `output_noise_std` | `.029` | `0` |
+| `lr_anneal_start` | `.6` | `.2` |
+| `lr_floor` | `.05` | `.01` |
+| `network_lr_floor` | `.01` | `.001` |
+
+See [energy transport](#energy-transport-over-seen-data-memory) for the
+objective. On the public toy hosts at protocol seed 0 it numerically **FAILS**
+`api-ring8-acquire`: the max covariance eigenvalue (about 2.3 against 1.5) and
+the per-mode radial KS (about .20 against .10) gates fail, while hq, mode count,
+mass and min covariance pass. It passes `api-gaussian1d-acquisition` 5/5. It was
+selected from a tuning budget of 162 configurations on those two tasks, so its
+margins are optimistic. It is not a default, has no calibration acceptance and
+grants no superiority claim. Task hosts supply resources (particles, latent
+dimension, batch, budget and prior law) exactly as for `k3p`.
 
 `halloween` transfers the optimizer/loss sections of an archived HyperGAN
 configuration. Its architecture, auxiliary loss, original runtime and decay

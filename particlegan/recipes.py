@@ -1735,6 +1735,13 @@ def get_recipe_fields(name="gan", *, trainer=None, **overrides):
     ``"atlas"`` adds automatic feature-cell selection (128 cells) and the
     settled optimizer-reopen guard to E22. ``"ka2"`` retains the KA2 recipe;
     ``"k3p"`` explicitly selects the earlier critic formulation.
+    ``"k3p_energy"`` is ``"k3p"`` plus one declared delta: energy transport
+    (weight 300, a 4,096-row seen-data memory, full prior population), zero
+    output noise and the LR schedule ``lr_anneal_start=.2``, ``lr_floor=.01``,
+    ``network_lr_floor=.001``. It is a named native baseline that numerically
+    FAILS ``api-ring8-acquire`` (max covariance and radial KS gates) while
+    passing ``api-gaussian1d-acquisition``; it is not a default and has no
+    calibration acceptance.
     ``"bcap"`` selects zero-momentum dualnorm with G/E step .012, D step
     .018 and sampled-prior row step .03, non-saturating loss, smoothing .001,
     per-offset convolution updates, fixed real/fake input-gradient caps,
@@ -1888,6 +1895,14 @@ def get_recipe_fields(name="gan", *, trainer=None, **overrides):
     presets["atlas"] = {**presets["e22"], "birth_death_backend": "auto",
                          "birth_death_cells": 128, "reopen_guard": "settled"}
     presets["e22_routed"] = {**presets["e22"], "row_policy": "routed_paired"}
+    # Declared delta against k3p (native-baseline round 2 selection). A named
+    # failing baseline for comparison, not a default or calibrated recipe.
+    presets["k3p_energy"] = {
+        **presets["k3p"], "energy_transport_weight": 300.,
+        "energy_transport_memory": 4096, "energy_transport_population": True,
+        "output_noise_std": 0., "lr_anneal_start": .2, "lr_floor": .01,
+        "network_lr_floor": .001,
+    }
     presets["halloween"] = {
         **presets["bcap_adam"], "reg_coeff": 0.0,
         "lr": 0.008020980209802098, "d_lr_mult": 0.4922016232592352,
