@@ -335,6 +335,11 @@
       "goal": "misgan-bispf-research-v1",
       "current": "reports/forge/misgan-bispf/LEADERBOARD.md",
       "description": "Scoped four-mode MisGAN recovery and neural imputation study; original 100-mode tasks stay separate."
+    },
+    {
+      "goal": "native-baseline-v1",
+      "current": "reports/forge/native-baseline-20261113/leaderboard.md",
+      "description": "One global public-API trainer config (k3p_energy) on api-ring8-acquire and api-gaussian1d-acquisition with untouched holdouts; ring8 is a faithful FAIL."
     }
   ],
   "not_leaderboards": [
