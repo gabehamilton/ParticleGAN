@@ -1,0 +1,37 @@
+[
+ {
+  "witness": "stratified_32_per_mode_one_atom_at_0_sigma",
+  "pass_rate": 0.99,
+  "median_cmax": 1.1972,
+  "median_ks": 0.0659,
+  "median_hq": 1.0
+ },
+ {
+  "witness": "stratified_32_per_mode_one_atom_at_5_sigma",
+  "pass_rate": 0.09,
+  "median_cmax": 1.7758,
+  "median_ks": 0.0734,
+  "median_hq": 0.9961
+ },
+ {
+  "witness": "stratified_32_per_mode_one_atom_at_6_sigma",
+  "pass_rate": 0.02,
+  "median_cmax": 2.1052,
+  "median_ks": 0.0734,
+  "median_hq": 0.9961
+ },
+ {
+  "witness": "stratified_32_per_mode_one_atom_at_7_sigma",
+  "pass_rate": 0.0,
+  "median_cmax": 2.5054,
+  "median_ks": 0.0734,
+  "median_hq": 0.9961
+ },
+ {
+  "witness": "stratified_32_per_mode_one_atom_at_8_sigma",
+  "pass_rate": 0.0,
+  "median_cmax": 2.9598,
+  "median_ks": 0.0734,
+  "median_hq": 0.9961
+ }
+]

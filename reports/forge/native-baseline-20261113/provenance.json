@@ -1,0 +1,698 @@
+{
+ "schema": "native_baseline_provenance_v1",
+ "note": "Bulk receipts, observations, checkpoints and logs stay local (paths relative to the workspace root W). Only paths and sha256 are committed. Protocol seed 0 everywhere; no seed variation.",
+ "workspace_root": "W = <local Codex workspace>/2026-11-10/i-m-thinking-about-what-would",
+ "source_commits": {
+  "base_of_lineage": "135286a29 (master/release 0.9.8)",
+  "gaussian1d_host_overrides": "8f89ccc21 (sweep-only surface; withdrawn on the final head because api_contract.py is task-card pinned)",
+  "gaussian1d_recipe_injection": "2ddf801b2 (round-1 selection source; withdrawn on the final head likewise)",
+  "energy_transport": "ed3a393a534047133f8321e71ad0b38a37eda5d2 (round-2 selection source)",
+  "k3p_energy_preset": "a85a34fb110ba08c3737aa6ba2bc95196a949514 (confirmation and holdout source)",
+  "ported_onto_develop": "805713ed512e0049993a16966a637b966f040844",
+  "ported_commits": [
+   "9f0f872506c870afc8329588b3b45bad6bf0e825 test: declare energy defaults for the bcap develop-compatibility probe",
+   "41b2acb2c70f85f1386f189850484170470df336 fix(recipe): keep task-card-pinned sources byte-identical to develop",
+   "16dfd3982fe863b3425ff6b21cc40dccb9c173c2 feat(recipe): register k3p_energy as a declared-delta native baseline",
+   "93fb228a3c2e6b7d6c397990bd60defc2d98d755 feat(recipe): energy transport over seen-data memory",
+   "d7ce31e412cfde99453a5949eee92166e7ca038b feat(toy-api): allow complete Recipe injection on the gaussian1d host",
+   "d447d1cdd71def785683c151bf8944611c59929e feat(toy-api): accept public tuning overrides on the gaussian1d host"
+  ],
+  "first_port_rerun_source": "16dfd3982fe863b3425ff6b21cc40dccb9c173c2",
+  "post_port_rerun_source": "41b2acb2c70f85f1386f189850484170470df336",
+  "review_fix": "859c70e1ddc1577a66924a3eeab965497fd7d7e9 fix(energy): bind the population stream in Forge, refuse degenerate scales and unconsumed weights",
+  "review_rerun_source": "859c70e1ddc1577a66924a3eeab965497fd7d7e9",
+  "ported_onto_master": "952c3b62ba434f7da194067923351ff5748ef8dd (fork master == upstream master, Merge pull request #539: rhbi-v9..v12, empf-v8, rhbi_optimized default, 0.10.0)",
+  "master_port_commits": [
+   "2b6cf7c1d265f52b1f9daedc586a3524f2228450 feat(recipe): energy transport over seen-data memory",
+   "e58b1933ab1ee96f432514877e943ca8171f1723 feat(recipe): register k3p_energy as a declared-delta native baseline"
+  ],
+  "master_port_rerun_source": "e58b1933ab1ee96f432514877e943ca8171f1723"
+ },
+ "selected_configuration": {
+  "preset": "k3p_energy",
+  "base": "k3p",
+  "delta": {
+   "energy_transport_weight": 300.0,
+   "energy_transport_memory": 4096,
+   "energy_transport_population": true,
+   "output_noise_std": 0.0,
+   "lr_anneal_start": 0.2,
+   "lr_floor": 0.01,
+   "network_lr_floor": 0.001
+  }
+ },
+ "tuning_budget": {
+  "distinct_configs_on_leaderboard": 163,
+  "selection_configs": 162,
+  "control_configs": 1,
+  "selection_configs_by_round": {
+   "round_1_and_baselines (L1-L4, presets, C-combine, develop)": 117,
+   "round_2 (E-S1-atoms 24, E-S2-continuous 20, E-build 1)": 45
+  },
+  "off_board_non_numerical": "Not on the board and not counted: the 4 labels S2-continuous-dv12-{ew03,ew1,ew3}-pop and -ew1-nopop. E-S2-continuous/attempt0-harness-error recorded base k3p and ERROR at Recipe construction (fields not recorded). E-S2-continuous/attempt1-k3p-dv12-runtime-error recorded e22 base with critic_formulation k3p and DV12 (4 configs, energy weight .3/1/3 with population, 1 without) and ERROR at update 0 (0/0 checks). Neither produced a measurement."
+ },
+ "receipts": [
+  {
+   "role": "selection sweep (selected config, label k3p+delta)",
+   "cohort": "selection",
+   "local_path": "outputs/native-baseline/E-S1-atoms/runs/S1-atoms-w300-m4096-pop__api-ring8-acquire/api-ring8-acquire/receipt.json",
+   "receipt_sha256": "edaf0926ad35570704b5ea36117d9a1577ba282ebf54d225ee0f8dcd2dc3ab5c",
+   "case": "api-ring8-acquire",
+   "seed": 0,
+   "status": "COMPLETE",
+   "verdict": "FAIL",
+   "sustained_metric_passed": false,
+   "completed_updates": 1200,
+   "observations": 25,
+   "checks_passed": 0,
+   "source_commit": "ed3a393a534047133f8321e71ad0b38a37eda5d2",
+   "source_unchanged": true,
+   "recipe_name": "k3p",
+   "recipe_sha256_name_as_k3p": "8530304583deceba6570b7de709330009fd9a41fa872f558d59f4096ce43c3af",
+   "observations_npz_sha256": "3e8f919c11b14574f81869956650d1a7c0dfdfd95971818844172d4b449093d9",
+   "final_state_sha256": "f5cba2fba781ddb62c350fad0a31d47df62f170567edb20d2017ef136573fde7",
+   "batch_sequence_sha256": "07e514b7718d3cb9f0a6cb79c47b591ca0a01257f4f8e5322eb71cb72b043398",
+   "initial_state_sha256": "c1229934141539d70030b9a60837a60c58ff3b00aaac3f0e80acac0b4c77bd3d",
+   "failed_bounds": [
+    "max_cov_eigen <= 1.5",
+    "max_radial_ks <= 0.1",
+    "last 5 post-update metric observations do not all pass"
+   ]
+  },
+  {
+   "role": "selection sweep (selected config, label k3p+delta)",
+   "cohort": "selection",
+   "local_path": "outputs/native-baseline/E-S1-atoms/runs/S1-atoms-w300-m4096-pop__api-gaussian1d-acquisition/api-gaussian1d-acquisition/receipt.json",
+   "receipt_sha256": "4219b0c3beca41eb029a7b2c18a92f79e914392f6e2071908077cdf1aaf37d36",
+   "case": "api-gaussian1d-acquisition",
+   "seed": 0,
+   "status": "COMPLETE",
+   "verdict": "PASS",
+   "sustained_metric_passed": true,
+   "completed_updates": 1000,
+   "observations": 25,
+   "checks_passed": 22,
+   "source_commit": "ed3a393a534047133f8321e71ad0b38a37eda5d2",
+   "source_unchanged": true,
+   "recipe_name": "k3p",
+   "recipe_sha256_name_as_k3p": "71aeb833bb4e829612358ad0ba7ae1fa92e00ed895a50921dd021f98d34745cd",
+   "observations_npz_sha256": "73f3a8fd7827854bf9b82063bc53a2ea87057e2bb810678c9e9927d971c447a9",
+   "final_state_sha256": "76812dc57bb584b3f87c2e265cd1f43991f62d75019dc6b58d0f03aec8004e31",
+   "batch_sequence_sha256": "50a52e62d839c513df1b49fcfae45ccd62bce8b186f9a5469550caf710551b84",
+   "initial_state_sha256": "1e15fef3aab318032992940a55c40be5d46cca38ea7bad7407958a4ff67e1325",
+   "failed_bounds": []
+  },
+  {
+   "role": "confirmation rerun, named preset",
+   "cohort": "selection re-identification",
+   "local_path": "outputs/native-baseline/E-confirm/rerun/api-ring8-acquire/receipt.json",
+   "receipt_sha256": "f457cd0ffeb6038ad4aab2b26dfd25caecc4549592a7563c63a45fc1974644e3",
+   "case": "api-ring8-acquire",
+   "seed": 0,
+   "status": "COMPLETE",
+   "verdict": "FAIL",
+   "sustained_metric_passed": false,
+   "completed_updates": 1200,
+   "observations": 25,
+   "checks_passed": 0,
+   "source_commit": "a85a34fb110ba08c3737aa6ba2bc95196a949514",
+   "source_unchanged": true,
+   "recipe_name": "k3p_energy",
+   "recipe_sha256_name_as_k3p": "8530304583deceba6570b7de709330009fd9a41fa872f558d59f4096ce43c3af",
+   "observations_npz_sha256": "3e8f919c11b14574f81869956650d1a7c0dfdfd95971818844172d4b449093d9",
+   "final_state_sha256": "3af78782bfef85ee38e635282b1971a7547cb9baca9c30271a0780b880c1f07b",
+   "batch_sequence_sha256": "07e514b7718d3cb9f0a6cb79c47b591ca0a01257f4f8e5322eb71cb72b043398",
+   "initial_state_sha256": "4026d48932fcc343ba69aaec549e90c2f6f09afd6726e07fb6c07fbc688ff052",
+   "failed_bounds": [
+    "max_cov_eigen <= 1.5",
+    "max_radial_ks <= 0.1",
+    "last 5 post-update metric observations do not all pass"
+   ]
+  },
+  {
+   "role": "confirmation rerun, named preset",
+   "cohort": "selection re-identification",
+   "local_path": "outputs/native-baseline/E-confirm/rerun/api-gaussian1d-acquisition/receipt.json",
+   "receipt_sha256": "ce7acd94edee68e39fe0791ef4ee0c44ddc53a86480c7acc04505895d8b1b256",
+   "case": "api-gaussian1d-acquisition",
+   "seed": 0,
+   "status": "COMPLETE",
+   "verdict": "PASS",
+   "sustained_metric_passed": true,
+   "completed_updates": 1000,
+   "observations": 25,
+   "checks_passed": 22,
+   "source_commit": "a85a34fb110ba08c3737aa6ba2bc95196a949514",
+   "source_unchanged": true,
+   "recipe_name": "k3p_energy",
+   "recipe_sha256_name_as_k3p": "71aeb833bb4e829612358ad0ba7ae1fa92e00ed895a50921dd021f98d34745cd",
+   "observations_npz_sha256": "73f3a8fd7827854bf9b82063bc53a2ea87057e2bb810678c9e9927d971c447a9",
+   "final_state_sha256": "4f12a44bcce81e18230db3691b860ab5cae3321a64e48dfce421ad4ed3fdec2e",
+   "batch_sequence_sha256": "50a52e62d839c513df1b49fcfae45ccd62bce8b186f9a5469550caf710551b84",
+   "initial_state_sha256": "2f8bfe7564c3aee0de72ee60e7aafa3b1f491b164f85559c21ddcafd1bc3b531",
+   "failed_bounds": []
+  },
+  {
+   "role": "post-port rerun on the first develop-based head",
+   "cohort": "selection re-identification",
+   "local_path": "outputs/native-baseline/E-integrate/rerun/api-ring8-acquire/api-ring8-acquire/receipt.json",
+   "receipt_sha256": "126fc8868215d78229e55cfc68a4f4e96e5e1b91a33518be1e096096315ad025",
+   "case": "api-ring8-acquire",
+   "seed": 0,
+   "status": "COMPLETE",
+   "verdict": "FAIL",
+   "sustained_metric_passed": false,
+   "completed_updates": 1200,
+   "observations": 25,
+   "checks_passed": 0,
+   "source_commit": "16dfd3982fe863b3425ff6b21cc40dccb9c173c2",
+   "source_unchanged": true,
+   "recipe_name": "k3p_energy",
+   "recipe_sha256_name_as_k3p": "8530304583deceba6570b7de709330009fd9a41fa872f558d59f4096ce43c3af",
+   "observations_npz_sha256": "3e8f919c11b14574f81869956650d1a7c0dfdfd95971818844172d4b449093d9",
+   "final_state_sha256": "3af78782bfef85ee38e635282b1971a7547cb9baca9c30271a0780b880c1f07b",
+   "batch_sequence_sha256": "07e514b7718d3cb9f0a6cb79c47b591ca0a01257f4f8e5322eb71cb72b043398",
+   "initial_state_sha256": "4026d48932fcc343ba69aaec549e90c2f6f09afd6726e07fb6c07fbc688ff052",
+   "failed_bounds": [
+    "max_cov_eigen <= 1.5",
+    "max_radial_ks <= 0.1",
+    "last 5 post-update metric observations do not all pass"
+   ]
+  },
+  {
+   "role": "post-port rerun on the first develop-based head",
+   "cohort": "selection re-identification",
+   "local_path": "outputs/native-baseline/E-integrate/rerun/api-gaussian1d-acquisition/api-gaussian1d-acquisition/receipt.json",
+   "receipt_sha256": "7b32d7696b4e7de274bd3412fcd5acbaec86d6c02f6ed283b138087a961d879d",
+   "case": "api-gaussian1d-acquisition",
+   "seed": 0,
+   "status": "COMPLETE",
+   "verdict": "PASS",
+   "sustained_metric_passed": true,
+   "completed_updates": 1000,
+   "observations": 25,
+   "checks_passed": 22,
+   "source_commit": "16dfd3982fe863b3425ff6b21cc40dccb9c173c2",
+   "source_unchanged": true,
+   "recipe_name": "k3p_energy",
+   "recipe_sha256_name_as_k3p": "71aeb833bb4e829612358ad0ba7ae1fa92e00ed895a50921dd021f98d34745cd",
+   "observations_npz_sha256": "73f3a8fd7827854bf9b82063bc53a2ea87057e2bb810678c9e9927d971c447a9",
+   "final_state_sha256": "4f12a44bcce81e18230db3691b860ab5cae3321a64e48dfce421ad4ed3fdec2e",
+   "batch_sequence_sha256": "50a52e62d839c513df1b49fcfae45ccd62bce8b186f9a5469550caf710551b84",
+   "initial_state_sha256": "2f8bfe7564c3aee0de72ee60e7aafa3b1f491b164f85559c21ddcafd1bc3b531",
+   "failed_bounds": []
+  },
+  {
+   "role": "post-port rerun on the final library head (pinned sources restored)",
+   "cohort": "selection re-identification",
+   "local_path": "outputs/native-baseline/E-integrate/rerun-final/api-ring8-acquire/api-ring8-acquire/receipt.json",
+   "receipt_sha256": "c94c731575dab24a463c13d1024164f34cb23b5d8ed97d9aca221f62781d3da6",
+   "case": "api-ring8-acquire",
+   "seed": 0,
+   "status": "COMPLETE",
+   "verdict": "FAIL",
+   "sustained_metric_passed": false,
+   "completed_updates": 1200,
+   "observations": 25,
+   "checks_passed": 0,
+   "source_commit": "41b2acb2c70f85f1386f189850484170470df336",
+   "source_unchanged": true,
+   "recipe_name": "k3p_energy",
+   "recipe_sha256_name_as_k3p": "8530304583deceba6570b7de709330009fd9a41fa872f558d59f4096ce43c3af",
+   "observations_npz_sha256": "3e8f919c11b14574f81869956650d1a7c0dfdfd95971818844172d4b449093d9",
+   "final_state_sha256": "3af78782bfef85ee38e635282b1971a7547cb9baca9c30271a0780b880c1f07b",
+   "batch_sequence_sha256": "07e514b7718d3cb9f0a6cb79c47b591ca0a01257f4f8e5322eb71cb72b043398",
+   "initial_state_sha256": "4026d48932fcc343ba69aaec549e90c2f6f09afd6726e07fb6c07fbc688ff052",
+   "failed_bounds": [
+    "max_cov_eigen <= 1.5",
+    "max_radial_ks <= 0.1",
+    "last 5 post-update metric observations do not all pass"
+   ]
+  },
+  {
+   "role": "post-port rerun on the final library head (pinned sources restored)",
+   "cohort": "selection re-identification",
+   "local_path": "outputs/native-baseline/E-integrate/rerun-final/api-gaussian1d-acquisition/api-gaussian1d-acquisition/receipt.json",
+   "receipt_sha256": "581671d0d1d9f86d8b7ec02ab0c7e1ffbc6d660b54351f502bf29030b8ade616",
+   "case": "api-gaussian1d-acquisition",
+   "seed": 0,
+   "status": "COMPLETE",
+   "verdict": "PASS",
+   "sustained_metric_passed": true,
+   "completed_updates": 1000,
+   "observations": 25,
+   "checks_passed": 22,
+   "source_commit": "41b2acb2c70f85f1386f189850484170470df336",
+   "source_unchanged": true,
+   "recipe_name": "k3p_energy",
+   "recipe_sha256_name_as_k3p": "71aeb833bb4e829612358ad0ba7ae1fa92e00ed895a50921dd021f98d34745cd",
+   "observations_npz_sha256": "73f3a8fd7827854bf9b82063bc53a2ea87057e2bb810678c9e9927d971c447a9",
+   "final_state_sha256": "4f12a44bcce81e18230db3691b860ab5cae3321a64e48dfce421ad4ed3fdec2e",
+   "batch_sequence_sha256": "50a52e62d839c513df1b49fcfae45ccd62bce8b186f9a5469550caf710551b84",
+   "initial_state_sha256": "2f8bfe7564c3aee0de72ee60e7aafa3b1f491b164f85559c21ddcafd1bc3b531",
+   "failed_bounds": []
+  },
+  {
+   "role": "review-fix rerun (Forge energy stream binding, degenerate-scale refusal, host refusals)",
+   "cohort": "selection re-identification",
+   "local_path": "outputs/native-baseline/E-review/rerun/api-ring8-acquire/api-ring8-acquire/receipt.json",
+   "receipt_sha256": "174be81e2ceac9eb82af524705dac204ba09058d8f45e49d0c4d25310ec16afa",
+   "case": "api-ring8-acquire",
+   "seed": 0,
+   "status": "COMPLETE",
+   "verdict": "FAIL",
+   "sustained_metric_passed": false,
+   "completed_updates": 1200,
+   "observations": 25,
+   "checks_passed": 0,
+   "source_commit": "859c70e1ddc1577a66924a3eeab965497fd7d7e9",
+   "source_unchanged": true,
+   "recipe_name": "k3p_energy",
+   "recipe_sha256_name_as_k3p": "8530304583deceba6570b7de709330009fd9a41fa872f558d59f4096ce43c3af",
+   "observations_npz_sha256": "3e8f919c11b14574f81869956650d1a7c0dfdfd95971818844172d4b449093d9",
+   "final_state_sha256": "3af78782bfef85ee38e635282b1971a7547cb9baca9c30271a0780b880c1f07b",
+   "batch_sequence_sha256": "07e514b7718d3cb9f0a6cb79c47b591ca0a01257f4f8e5322eb71cb72b043398",
+   "initial_state_sha256": "4026d48932fcc343ba69aaec549e90c2f6f09afd6726e07fb6c07fbc688ff052",
+   "failed_bounds": [
+    "max_cov_eigen <= 1.5",
+    "max_radial_ks <= 0.1",
+    "last 5 post-update metric observations do not all pass"
+   ]
+  },
+  {
+   "role": "review-fix rerun (Forge energy stream binding, degenerate-scale refusal, host refusals)",
+   "cohort": "selection re-identification",
+   "local_path": "outputs/native-baseline/E-review/rerun/api-gaussian1d-acquisition/api-gaussian1d-acquisition/receipt.json",
+   "receipt_sha256": "d138bac96963cf17f242594a29756b2e509f9f2e54c31e6bd86e46bdb77ada7a",
+   "case": "api-gaussian1d-acquisition",
+   "seed": 0,
+   "status": "COMPLETE",
+   "verdict": "PASS",
+   "sustained_metric_passed": true,
+   "completed_updates": 1000,
+   "observations": 25,
+   "checks_passed": 22,
+   "source_commit": "859c70e1ddc1577a66924a3eeab965497fd7d7e9",
+   "source_unchanged": true,
+   "recipe_name": "k3p_energy",
+   "recipe_sha256_name_as_k3p": "71aeb833bb4e829612358ad0ba7ae1fa92e00ed895a50921dd021f98d34745cd",
+   "observations_npz_sha256": "73f3a8fd7827854bf9b82063bc53a2ea87057e2bb810678c9e9927d971c447a9",
+   "final_state_sha256": "4f12a44bcce81e18230db3691b860ab5cae3321a64e48dfce421ad4ed3fdec2e",
+   "batch_sequence_sha256": "50a52e62d839c513df1b49fcfae45ccd62bce8b186f9a5469550caf710551b84",
+   "initial_state_sha256": "2f8bfe7564c3aee0de72ee60e7aafa3b1f491b164f85559c21ddcafd1bc3b531",
+   "failed_bounds": []
+  },
+  {
+   "role": "master-port rerun (k3p_energy on the 952c3b62b-based library head)",
+   "cohort": "selection re-identification",
+   "local_path": "outputs/native-baseline/E-fork/rerun/api-ring8-acquire/api-ring8-acquire/receipt.json",
+   "receipt_sha256": "37d394b26a9e98bb3da23e2f3c54df084adbf7b5c91ceb61f3a1e29cc29474b3",
+   "case": "api-ring8-acquire",
+   "seed": 0,
+   "status": "COMPLETE",
+   "verdict": "FAIL",
+   "sustained_metric_passed": false,
+   "completed_updates": 1200,
+   "observations": 25,
+   "checks_passed": 0,
+   "source_commit": "e58b1933ab1ee96f432514877e943ca8171f1723",
+   "source_unchanged": true,
+   "recipe_name": "k3p_energy",
+   "recipe_sha256_name_as_k3p": "8530304583deceba6570b7de709330009fd9a41fa872f558d59f4096ce43c3af",
+   "observations_npz_sha256": "3e8f919c11b14574f81869956650d1a7c0dfdfd95971818844172d4b449093d9",
+   "final_state_sha256": "3af78782bfef85ee38e635282b1971a7547cb9baca9c30271a0780b880c1f07b",
+   "batch_sequence_sha256": "07e514b7718d3cb9f0a6cb79c47b591ca0a01257f4f8e5322eb71cb72b043398",
+   "initial_state_sha256": "4026d48932fcc343ba69aaec549e90c2f6f09afd6726e07fb6c07fbc688ff052",
+   "failed_bounds": [
+    "max_cov_eigen <= 1.5",
+    "max_radial_ks <= 0.1",
+    "last 5 post-update metric observations do not all pass"
+   ]
+  },
+  {
+   "role": "master-port rerun (k3p_energy on the 952c3b62b-based library head)",
+   "cohort": "selection re-identification",
+   "local_path": "outputs/native-baseline/E-fork/rerun/api-gaussian1d-acquisition/api-gaussian1d-acquisition/receipt.json",
+   "receipt_sha256": "faed5bb66dd9e99f9022c79017d5b1192c87e99793902061df8b63098b2d9c09",
+   "case": "api-gaussian1d-acquisition",
+   "seed": 0,
+   "status": "COMPLETE",
+   "verdict": "PASS",
+   "sustained_metric_passed": true,
+   "completed_updates": 1000,
+   "observations": 25,
+   "checks_passed": 22,
+   "source_commit": "e58b1933ab1ee96f432514877e943ca8171f1723",
+   "source_unchanged": true,
+   "recipe_name": "k3p_energy",
+   "recipe_sha256_name_as_k3p": "71aeb833bb4e829612358ad0ba7ae1fa92e00ed895a50921dd021f98d34745cd",
+   "observations_npz_sha256": "73f3a8fd7827854bf9b82063bc53a2ea87057e2bb810678c9e9927d971c447a9",
+   "final_state_sha256": "4f12a44bcce81e18230db3691b860ab5cae3321a64e48dfce421ad4ed3fdec2e",
+   "batch_sequence_sha256": "50a52e62d839c513df1b49fcfae45ccd62bce8b186f9a5469550caf710551b84",
+   "initial_state_sha256": "2f8bfe7564c3aee0de72ee60e7aafa3b1f491b164f85559c21ddcafd1bc3b531",
+   "failed_bounds": []
+  },
+  {
+   "role": "holdout, run once after predeclaration",
+   "cohort": "holdout",
+   "local_path": "outputs/native-baseline/E-confirm/holdout/ring8-hold/api-ring8-hold/receipt.json",
+   "receipt_sha256": "92a069e0991a11ae1549c1d7c84c202021c90b9712fb5bf1ee29e5e4844e1e39",
+   "case": "api-ring8-hold",
+   "seed": 0,
+   "status": "ERROR",
+   "verdict": "FAIL",
+   "sustained_metric_passed": null,
+   "completed_updates": 1200,
+   "observations": 13,
+   "checks_passed": 0,
+   "source_commit": "a85a34fb110ba08c3737aa6ba2bc95196a949514",
+   "source_unchanged": true,
+   "recipe_name": "k3p_energy",
+   "recipe_sha256_name_as_k3p": "81aca5604939e454763697c528810fc5e2a4b23fd13678e6c7fcfea8f8e1cc22",
+   "observations_npz_sha256": "27a5f94c62bdd44e43d4c0fd605f54fa25f393a2e7eb5fd096a69663028e7d84",
+   "final_state_sha256": "1d57b0a93cc90740408719f88ea9e231264c73b56fdda50ca3292964bd7e98fe",
+   "batch_sequence_sha256": "07e514b7718d3cb9f0a6cb79c47b591ca0a01257f4f8e5322eb71cb72b043398",
+   "initial_state_sha256": "5f2a50e31ea690dd57bfc44136e061fd5bcd45d319f56f7176c61ef2f8af0d32",
+   "failed_bounds": [
+    "API execution or metric error: RuntimeError: scientific prerequisite failed at update1200: ['max_cov_eigen <= 1.5', 'max_radial_ks <= 0.1']"
+   ]
+  },
+  {
+   "role": "holdout, run once after predeclaration",
+   "cohort": "holdout",
+   "local_path": "outputs/native-baseline/E-confirm/holdout/gaussian2d/api-gaussian2d/receipt.json",
+   "receipt_sha256": "b4f6d769d5f8ac8bd96956170d40ec8a05d4d34d567c25db9a75c8ea615c1313",
+   "case": "api-gaussian2d",
+   "seed": 0,
+   "status": "COMPLETE",
+   "verdict": "PASS",
+   "sustained_metric_passed": true,
+   "completed_updates": 1000,
+   "observations": 25,
+   "checks_passed": 13,
+   "source_commit": "a85a34fb110ba08c3737aa6ba2bc95196a949514",
+   "source_unchanged": true,
+   "recipe_name": "k3p_energy",
+   "recipe_sha256_name_as_k3p": "dbad8c045f57dbbdcda016b86f6e3b9d7cb075fdf4b7053875de0c5f6f16f267",
+   "observations_npz_sha256": "5d556b2c355e2c7101ac0e7b72fa4f96eb7484b1d3aa859763cf66dc83e0c5cc",
+   "final_state_sha256": "2e9b4dc758cf32dbf94293f2c46509c85748dfbfa70f0eed56e64ae4199a518d",
+   "batch_sequence_sha256": "b2cc9b0c939e81c6a8042f739ab83b8b020da5c9486bb81bea9396ffe6834d17",
+   "initial_state_sha256": "9e692d8b948c73d1cb97ceac7d0eb295ef4edc46316256638bffd5187ecf31ad",
+   "failed_bounds": []
+  },
+  {
+   "role": "control: energy off (weight 0) with the same lr/noise delta",
+   "cohort": "control",
+   "local_path": "outputs/native-baseline/E-confirm/runs/CTRL-energy-off__api-ring8-acquire/api-ring8-acquire/receipt.json",
+   "receipt_sha256": "66eb13ed74b718b07b4ae5ea4aa9649a8715624154a589646fc55bb71f633ddf",
+   "case": "api-ring8-acquire",
+   "seed": 0,
+   "status": "COMPLETE",
+   "verdict": "FAIL",
+   "sustained_metric_passed": false,
+   "completed_updates": 1200,
+   "observations": 25,
+   "checks_passed": 0,
+   "source_commit": "a85a34fb110ba08c3737aa6ba2bc95196a949514",
+   "source_unchanged": true,
+   "recipe_name": "k3p",
+   "recipe_sha256_name_as_k3p": "1c166314af91031a2203d139c5957ac368ca22f2946165ad509ba236972b1f93",
+   "observations_npz_sha256": "354b10050618ed6d34149b309bd519e38d1af21335dd48021e921e4e8d9831e4",
+   "final_state_sha256": "91fcdc010f9410ba791221b3c215da7a6d1494ca35552b715af4e7d482c76b8e",
+   "batch_sequence_sha256": "07e514b7718d3cb9f0a6cb79c47b591ca0a01257f4f8e5322eb71cb72b043398",
+   "initial_state_sha256": "1ba22eca5fd3eff8c12c41df183270ab5845e530b199e29b65d36f9ebd4739eb",
+   "failed_bounds": [
+    "mass_tv <= 0.075",
+    "max_cov_eigen <= 1.5",
+    "max_radial_ks <= 0.1",
+    "last 5 post-update metric observations do not all pass"
+   ]
+  },
+  {
+   "role": "control: energy off (weight 0) with the same lr/noise delta",
+   "cohort": "control",
+   "local_path": "outputs/native-baseline/E-confirm/runs/CTRL-energy-off__api-gaussian1d-acquisition/api-gaussian1d-acquisition/receipt.json",
+   "receipt_sha256": "bfda67ba0864020a9ccd253d9e0d046c6905783240d897812f0676bc2bfec94b",
+   "case": "api-gaussian1d-acquisition",
+   "seed": 0,
+   "status": "COMPLETE",
+   "verdict": "PASS",
+   "sustained_metric_passed": true,
+   "completed_updates": 1000,
+   "observations": 25,
+   "checks_passed": 14,
+   "source_commit": "a85a34fb110ba08c3737aa6ba2bc95196a949514",
+   "source_unchanged": true,
+   "recipe_name": "k3p",
+   "recipe_sha256_name_as_k3p": "6fed61560913294ab53c009eec1793172167a2fd3d9900f8f1ac850de2ce4f0c",
+   "observations_npz_sha256": "70d15f9c724229346d061313a06b60883b58f2c8aac73ede6341c7059da7f00a",
+   "final_state_sha256": "f9c2af986dc838ec732bb6aad35a87f9964cf7da1ebfcef32c5713ae520540ff",
+   "batch_sequence_sha256": "50a52e62d839c513df1b49fcfae45ccd62bce8b186f9a5469550caf710551b84",
+   "initial_state_sha256": "c5bfe1b80bff7f407ae067fd80609bc8cc1965235159007189d94df4a9ed7ca4",
+   "failed_bounds": []
+  },
+  {
+   "role": "continuation prefix K=20",
+   "cohort": "control",
+   "local_path": "outputs/native-baseline/E-confirm/prefix/K20/api-ring8-acquire/receipt.json",
+   "receipt_sha256": "13f0e269eaff971a62f01eb1b98f8b6f9eb6d4bb8abea1f7f18c2ad1ef1895dc",
+   "case": "api-ring8-acquire",
+   "seed": 0,
+   "status": "COMPLETE",
+   "verdict": "FAIL",
+   "sustained_metric_passed": false,
+   "completed_updates": 20,
+   "observations": 21,
+   "checks_passed": 0,
+   "source_commit": "a85a34fb110ba08c3737aa6ba2bc95196a949514",
+   "source_unchanged": true,
+   "recipe_name": "k3p_energy",
+   "recipe_sha256_name_as_k3p": "8530304583deceba6570b7de709330009fd9a41fa872f558d59f4096ce43c3af",
+   "observations_npz_sha256": "14ccb1c050403a49db29bf1365a0ea1a113cf5d25ab7ca858bbf7f8d1636cbf6",
+   "final_state_sha256": "ab4e39eeafd842c2c7652fcc93cdafafca54cf665b8d26dd3054ce9b10027d81",
+   "batch_sequence_sha256": "7650c273aadc43f3ca58c94d928bcbe344b26eaccf55d7d3d016a70daa326a8c",
+   "initial_state_sha256": "4ab457e08958aeb4276dde54b23ce86044030eb13280daabb3a3d41752a88a91",
+   "failed_bounds": [
+    "hq >= 0.9",
+    "max_cov_eigen <= 1.5",
+    "max_radial_ks <= 0.1",
+    "modes == 8",
+    "default budget, evaluation draw count or metric cadence not completed",
+    "last 5 post-update metric observations do not all pass"
+   ],
+   "note": "bounded --steps prefix; used only as a continuation start state, never as a verdict"
+  },
+  {
+   "role": "continuation prefix K=600",
+   "cohort": "control",
+   "local_path": "outputs/native-baseline/E-confirm/prefix/K600/api-ring8-acquire/receipt.json",
+   "receipt_sha256": "72bca53d8b43ab045b4d8c3af00ebc27a652053770827bb85c78061374ec80f8",
+   "case": "api-ring8-acquire",
+   "seed": 0,
+   "status": "COMPLETE",
+   "verdict": "FAIL",
+   "sustained_metric_passed": false,
+   "completed_updates": 600,
+   "observations": 25,
+   "checks_passed": 0,
+   "source_commit": "a85a34fb110ba08c3737aa6ba2bc95196a949514",
+   "source_unchanged": true,
+   "recipe_name": "k3p_energy",
+   "recipe_sha256_name_as_k3p": "8530304583deceba6570b7de709330009fd9a41fa872f558d59f4096ce43c3af",
+   "observations_npz_sha256": "8340f2cade8e532ef075085013968ea9d8527480848b02191225094384b98c20",
+   "final_state_sha256": "3f671d91d05e0011cc121b8a21325477f05aaee7123962d1fb4ae287f725dcbb",
+   "batch_sequence_sha256": "6324967132826c3e9d78a1daa0a21312845f7dcead3c2606923940dbf1bdce02",
+   "initial_state_sha256": "cb87e89dc6a2a2d1aeba72de396b78e1f872252d8fdabcbf9c15527af20ea1d7",
+   "failed_bounds": [
+    "hq >= 0.9",
+    "max_cov_eigen <= 1.5",
+    "max_radial_ks <= 0.1",
+    "default budget, evaluation draw count or metric cadence not completed",
+    "last 5 post-update metric observations do not all pass"
+   ],
+   "note": "bounded --steps prefix; used only as a continuation start state, never as a verdict"
+  },
+  {
+   "role": "continuation prefix K=300",
+   "cohort": "control",
+   "local_path": "outputs/native-baseline/E-confirm/prefix/K300/api-gaussian1d-acquisition/receipt.json",
+   "receipt_sha256": "93cbaeca4a400802d10f7813fb4c8fd47f5878947d43574d7d78e6cf2613987e",
+   "case": "api-gaussian1d-acquisition",
+   "seed": 0,
+   "status": "COMPLETE",
+   "verdict": "FAIL",
+   "sustained_metric_passed": false,
+   "completed_updates": 300,
+   "observations": 25,
+   "checks_passed": 16,
+   "source_commit": "a85a34fb110ba08c3737aa6ba2bc95196a949514",
+   "source_unchanged": true,
+   "recipe_name": "k3p_energy",
+   "recipe_sha256_name_as_k3p": "71aeb833bb4e829612358ad0ba7ae1fa92e00ed895a50921dd021f98d34745cd",
+   "observations_npz_sha256": "494da2aa441a03ad935db55abb864075431be47b31d29725664d665d69cb0cce",
+   "final_state_sha256": "23e4f337a1eb74334aef4d7f25d6f6e69fa2bdc91b187fc4f3fb7ef94b286ae8",
+   "batch_sequence_sha256": "0835c0ff1567e7aab134c78f24beade364d0c03fb50842a9c06ecdd7726541e0",
+   "initial_state_sha256": "ab0df0346db7efadadacf9402f6eb251a264aaa247f8f322f54f1339e21d18c7",
+   "failed_bounds": [
+    "default budget, evaluation draw count or metric cadence not completed",
+    "last 5 post-update metric observations do not all pass"
+   ],
+   "note": "bounded --steps prefix; used only as a continuation start state, never as a verdict"
+  }
+ ],
+ "local_outputs": {
+  "leaderboard.md": {
+   "local_path": "outputs/native-baseline/leaderboard.md",
+   "sha256": "9e2154f54225f9dda9fbc1eab6bd1b198e0f41690bff127519bab75e63989bda",
+   "status": "superseded by the cohort-ranked revision (same records and ranking key); kept locally as original evidence"
+  },
+  "leaderboard.json": {
+   "local_path": "outputs/native-baseline/leaderboard.json",
+   "sha256": "0e070141fd25d18df7713b559d20742a3621a452f38b2ae5e1ad318f7296352e",
+   "status": "superseded by the cohort-ranked revision (same records and ranking key); kept locally as original evidence"
+  },
+  "make_leaderboard.py": {
+   "local_path": "outputs/native-baseline/make_leaderboard.py",
+   "sha256": "ecd578488a3f7642fd276c230d723bb650710d325c6552bd2a590089beb41c97",
+   "status": "superseded by the cohort-ranked revision (same records and ranking key); kept locally as original evidence"
+  },
+  "leaderboard (current, cohort-ranked)": {
+   "committed_path": "reports/forge/native-baseline-20261113/leaderboard.md",
+   "sha256": "b2bc6c1ced0a1b56849e9bf485da04c52ad2f5d277f4c11d60fa43408ba290e6",
+   "generator": "reports/forge/native-baseline-20261113/make_leaderboard.py",
+   "generator_sha256": "fe894912821986a252f3a63f34dcbc8b0a1e9b74ac7f2f04c38bedee1e10654a",
+   "command": "python make_leaderboard.py W/outputs/native-baseline --json-out W/outputs/native-baseline/E-review/leaderboard.json",
+   "json_local_path": "outputs/native-baseline/E-review/leaderboard.json",
+   "json_sha256": "efc47eec77cb003c30e07f6a33a7f9f05aaf66ec87b438217f9ed73659e2b27e",
+   "note": "Same 176 rows and ranking key as the superseded board, ranked within served-law cohorts read from each receipt's resolved recipe; nested attempt*/ ERROR records listed off-board."
+  },
+  "calibration/witness.py": {
+   "local_path": "outputs/native-baseline/calibration/witness.py",
+   "sha256": "c1725228c5e2afdacc4fb81d4e3d65bbcb9d5091b2528732fa5612e100fb429b"
+  },
+  "calibration/witness.jsonl": {
+   "local_path": "outputs/native-baseline/calibration/witness.jsonl",
+   "sha256": "59195f9a8d0a4316876184b7c536f552201116807cf4f9064155d64d3f2ba55f"
+  },
+  "E-confirm/predeclared.md": {
+   "local_path": "outputs/native-baseline/E-confirm/predeclared.md",
+   "sha256": "974ab5aaba1606395cdf4a27a329a3ef3d4fa6a3fa2ec7f14700b03d94d62554"
+  },
+  "E-confirm/predeclared.sha256": {
+   "local_path": "outputs/native-baseline/E-confirm/predeclared.sha256",
+   "sha256": "cf37be9fb1ac63df4649e38b77003f81a6752e48e3dbcf1cf5bde3fb6715f2e2"
+  },
+  "E-confirm/notes.md": {
+   "local_path": "outputs/native-baseline/E-confirm/notes.md",
+   "sha256": "4932d17d8171ea9284f62cfd4d107191a063cc4066f026bf49d91f277cbef2db"
+  },
+  "E-judge.md": {
+   "local_path": "outputs/native-baseline/E-judge.md",
+   "sha256": "9357ed88f8d1e40e1a1df87809f7dca487b741d63e80b488d581722a6c170b0e"
+  },
+  "BRIEF.md": {
+   "local_path": "outputs/native-baseline/BRIEF.md",
+   "sha256": "266caef664c2de01d288143320ad23fe08985c48a4d145a23770e17e89e5aaa2"
+  },
+  "BRIEF-energy.md": {
+   "local_path": "outputs/native-baseline/BRIEF-energy.md",
+   "sha256": "e68c33d3ae4c1bcc3c5266694ce0789976ca7abefc2bdfe1f4761dc376ad611a"
+  },
+  "E-confirm/rerun-compare.jsonl": {
+   "local_path": "outputs/native-baseline/E-confirm/rerun-compare.jsonl",
+   "sha256": "5e48a333dd373c56846a6275ef3d63ee2625c4be87c37c3875ceaa1ecc909b6c"
+  },
+  "E-integrate/rerun-compare.jsonl": {
+   "local_path": "outputs/native-baseline/E-integrate/rerun-compare.jsonl",
+   "sha256": "f7b6a60d38fc3c83269df630dd8286bb853e05e497ddeda275434315ce1848ed"
+  },
+  "E-integrate/rerun-final-compare.jsonl": {
+   "local_path": "outputs/native-baseline/E-integrate/rerun-final-compare.jsonl",
+   "sha256": "50672b79bec43574b6ea9f94f9080b456567c36c098efee0c723839db2522e53"
+  },
+  "E-integrate/pins-develop.json": {
+   "local_path": "outputs/native-baseline/E-integrate/pins-develop.json",
+   "sha256": "b1cc743f651c808ee632f8e7a5e14e296185ef58bc46b05a0fac58fdeffa0c10"
+  },
+  "E-integrate/pins-final.json": {
+   "local_path": "outputs/native-baseline/E-integrate/pins-final.json",
+   "sha256": "b1cc743f651c808ee632f8e7a5e14e296185ef58bc46b05a0fac58fdeffa0c10"
+  },
+  "E-confirm/controls/CTRL-damage__api-ring8-acquire.json": {
+   "local_path": "outputs/native-baseline/E-confirm/controls/CTRL-damage__api-ring8-acquire.json",
+   "sha256": "fe452ce98be724bf7450492861b8831eefa05d10c4699a240208e912fbdebaa8"
+  },
+  "E-confirm/controls/CTRL-damage__api-gaussian1d-acquisition.json": {
+   "local_path": "outputs/native-baseline/E-confirm/controls/CTRL-damage__api-gaussian1d-acquisition.json",
+   "sha256": "faf2d43e6fd7e58bf6fcae3703ebea46b3693effe5d0f08a937f0b8f4bb2f5eb"
+  },
+  "E-confirm/controls/CTRL-fallback.jsonl": {
+   "local_path": "outputs/native-baseline/E-confirm/controls/CTRL-fallback.jsonl",
+   "sha256": "a5a665c0e41f784b787ac4a49fa343060180fc162a8bb51e6889be781bc1c594"
+  },
+  "E-confirm/controls/CTRL-off-identity.txt": {
+   "local_path": "outputs/native-baseline/E-confirm/controls/CTRL-off-identity.txt",
+   "sha256": "adc83e02e25bf68cd954fd131f608ed98780ef286ad29a1e9bccd5e84c0ffd0c"
+  },
+  "E-confirm/continuation/CTRL-continuation__api-ring8-acquire__K20.json": {
+   "local_path": "outputs/native-baseline/E-confirm/continuation/CTRL-continuation__api-ring8-acquire__K20.json",
+   "sha256": "4a16015eff3dc9d8b1e95b01df7d79b1410db6f96aba47308e28f8e32ce7f5de"
+  },
+  "E-confirm/continuation/CTRL-continuation__api-ring8-acquire__K600.json": {
+   "local_path": "outputs/native-baseline/E-confirm/continuation/CTRL-continuation__api-ring8-acquire__K600.json",
+   "sha256": "25c32c92d411164df5b0381d156c0e5ef0df539094511ff4b6e5d0397828f288"
+  },
+  "E-confirm/continuation/CTRL-continuation__api-gaussian1d-acquisition__K300.json": {
+   "local_path": "outputs/native-baseline/E-confirm/continuation/CTRL-continuation__api-gaussian1d-acquisition__K300.json",
+   "sha256": "0d2729ac30d54d9f4a3c76f8254cb505983705dedbcb37d2bb017ac5c628c3ef"
+  },
+  "E-review/rerun-compare.jsonl": {
+   "local_path": "outputs/native-baseline/E-review/rerun-compare.jsonl",
+   "sha256": "d089135a6dd54755bdb07efa417f98c3fa5939fc66c66dc645ee1010e0c2bef0"
+  },
+  "E-review/pins-review.json": {
+   "local_path": "outputs/native-baseline/E-review/pins-review.json",
+   "sha256": "b1cc743f651c808ee632f8e7a5e14e296185ef58bc46b05a0fac58fdeffa0c10"
+  },
+  "E-review/tests/SUMMARY.txt": {
+   "local_path": "outputs/native-baseline/E-review/tests/SUMMARY.txt",
+   "sha256": "7eee0e3722cc4f82a7ba6088378fe551ca396d251e023d5d94aa2b1f4e970708"
+  },
+  "E-review/stray_witness.jsonl": {
+   "local_path": "outputs/native-baseline/E-review/stray_witness.jsonl",
+   "sha256": "f6deba0116dfd7b18fda37831e0b064aa08a7f2149b05051c9e246c2d623d9a3"
+  },
+  "calibration/stray_witness (committed)": {
+   "committed_path": "reports/forge/native-baseline-20261113/calibration/stray_witness.py",
+   "sha256": "51094f27f27dcbabe0a881204c40b58cb59d996db9aac9b21245db6a02ae2fc9",
+   "command": "python stray_witness.py REPO > W/outputs/native-baseline/E-review/stray_witness.jsonl",
+   "committed_result": "reports/forge/native-baseline-20261113/calibration/stray_witness.json",
+   "committed_result_sha256": "327f45b23f589ea394503a1a2172e76700714e939a4719ea8af6cb3e86769e08",
+   "note": "Evaluator calibration only: witness.py's stratified 32-atoms-per-mode set with one mode-0 atom moved radially to k sigma."
+  },
+  "E-fork/rerun-compare.jsonl": {
+   "local_path": "outputs/native-baseline/E-fork/rerun-compare.jsonl",
+   "sha256": "ef605d0c51164e18956e9d394490e43926823515144345e6526deeb3ca45a2d6"
+  },
+  "E-fork/pins-fork.json": {
+   "local_path": "outputs/native-baseline/E-fork/pins-fork.json",
+   "sha256": "e31ccdcc9dc3bb9c2d7ed4757581ff151dc5152832be6dd0eb5c3bc7f8177413"
+  },
+  "E-fork/pins-master.json": {
+   "local_path": "outputs/native-baseline/E-fork/pins-master.json",
+   "sha256": "e31ccdcc9dc3bb9c2d7ed4757581ff151dc5152832be6dd0eb5c3bc7f8177413"
+  },
+  "E-fork/controls/off_identity.py": {
+   "local_path": "outputs/native-baseline/E-fork/controls/off_identity.py",
+   "sha256": "78efd68a57c50e4b89caed866f61b9ff9f9225f116ff5631a7b59a04dab7e098"
+  },
+  "E-fork/controls/CTRL-off-identity.txt": {
+   "local_path": "outputs/native-baseline/E-fork/controls/CTRL-off-identity.txt",
+   "sha256": "36fd076312a22b541f5b9adae57bb34f0753a189cffd5622042a877b5b0619b7"
+  },
+  "E-fork/tests/SUMMARY.txt": {
+   "local_path": "outputs/native-baseline/E-fork/tests/SUMMARY.txt",
+   "sha256": "685bcc0b621f0fe65d902544eb6bd3dcddf9866a9ddb78d09d53094106cbe63f"
+  }
+ }
+}
