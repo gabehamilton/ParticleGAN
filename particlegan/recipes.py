@@ -1037,8 +1037,24 @@ class Recipe:
                                 hard=self.encoder_mode == "hard", **options)
         raise ValueError("this recipe has no encoder")
 
-    def make_loss(self):
-        """The selected objective: ``d_loss(real, fake)``, ``g_loss(fake, real=None)``."""
+    def make_loss(self, *, binds_energy_transport=False):
+        """The selected objective: ``d_loss(real, fake)``, ``g_loss(fake, real=None)``.
+
+        With ``energy_transport_weight > 0`` the recipe's G objective also
+        contains ``energy_transport_loss``, which the returned object never
+        evaluates. Only a caller that adds that term to its G/prior loss (and
+        owns its target set, generated set, stream and checkpoint state) may
+        pass ``binds_energy_transport=True``; ``GANTrainer`` does. Every other
+        caller is refused here, before its loop runs, instead of training the
+        recipe without the mechanism. Weight 0 is unaffected.
+        """
+        if type(binds_energy_transport) is not bool:
+            raise TypeError("binds_energy_transport must be a boolean")
+        if self.energy_transport_weight and not binds_energy_transport:
+            raise ValueError("energy_transport_weight > 0 is unsupported by this caller-owned loop: it does not "
+                             "evaluate Recipe.energy_transport_loss, so the mechanism would be silently dropped. "
+                             "GANTrainer consumes it; a loop that binds it passes "
+                             "make_loss(binds_energy_transport=True)")
         if self.effective_critic_formulation == "rhbi" or self.rhbi_weight > 0 or self.rhbi_critic_weight > 0:
             from .rhbi import RHBIGANLoss
             return RHBIGANLoss(
@@ -1118,7 +1134,8 @@ class Recipe:
         ``particlegan.energy_transport`` defines the scale-normalized objective.
         ``GANTrainer`` supplies the target set (current G-phase batch or its
         seen-target FIFO) and the generated set (G batch or prior population).
-        Caller-owned loops that enable the weight must bind both themselves.
+        Caller-owned loops that enable the weight must bind both themselves
+        and declare it with ``make_loss(binds_energy_transport=True)``.
         Returns an exact zero without evaluating anything at weight 0.
         """
         weight = float(self.energy_transport_weight)

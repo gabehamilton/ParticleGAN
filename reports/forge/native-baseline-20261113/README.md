@@ -243,10 +243,14 @@ tuning-override surface (d447d1cdd, d7ce31e41) is not carried.
 - **Self-attested predeclaration.** The predeclaration evidence rests on a local mtime and hash (see Holdouts).
 - **Residual host scope.** Caller-owned toy hosts that do not consume the objective now refuse a positive weight as an
   unsupported mechanism (BLOCKED): ring16 BiGAN, the `api_conditionals` MisGAN fixtures, cGAN overlap, CycleGAN,
-  Cramer GAN, InfoGAN, PacGAN and the half-frequency vector hosts. Two hosts run their own loops inside the GANTrainer
-  envelope and are pinned byte for byte by task cards, so they still accept an energy recipe without consuming it:
-  the MisGAN model host (`api_model_misgan.py`) and the `api_images` joint-word host. This is documented in
-  `docs/api.md` rather than fixed. No Forge idea or named preset routes energy to them.
+  Cramer GAN, InfoGAN, PacGAN and the half-frequency vector hosts. Three more hosts run their own loops inside the
+  GANTrainer envelope and are pinned byte for byte by task cards: the MisGAN model host (`api_model_misgan.py`), the
+  `api_images` joint-word host and the `api_images` conditional image fixtures. Since the PR #1 review fix,
+  `Recipe.make_loss()` refuses a positive weight unless the caller declares `binds_energy_transport=True`, which only
+  GANTrainer does. These hosts therefore fail at construction, before any update, on every entry path. Forge preflight
+  reports BLOCKED. `api_run` records `ERROR`, not `BLOCKED`, because its BLOCKED mapping
+  (`api_contract.UnsupportedRecipeOverrides`) and the hosts' own refusal sites are pinned. Recording BLOCKED there
+  needs a new source-binding layer for those cards. The fix changes no training numerics.
 - **Packet shape.** Forge `public_components` packets (`behavior_adapters.py`, which is pinned) now carry the three energy
   fields at their defaults, as they already do for the rhbi fields. The bcap develop-compatibility probe declares them as
   later inactive defaults (`tests/conftest.py`), the same way it declares the rhbi fields. Forge refuses a positive energy

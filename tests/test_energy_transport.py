@@ -230,6 +230,103 @@ def test_caller_owned_scalar_gan_hosts_block_instead_of_dropping_energy(module, 
         host.build_case(case_id, device="cpu", seed=0, recipe_name="k3p_energy")
 
 
+# Task-card-pinned caller-owned hosts (the MisGAN model host and the api_images
+# joint-word and conditional image fixtures) cannot name the field themselves.
+# Recipe.make_loss refuses them, before any update, on every entry path.
+
+ENERGY_ON = dict(energy_transport_weight=300., energy_transport_memory=4096, energy_transport_population=True)
+
+
+def test_make_loss_requires_a_declared_energy_transport_consumer():
+    energy, off = get_recipe("k3p_energy"), get_recipe("k3p")
+    with pytest.raises(ValueError, match="energy_transport_weight"):
+        energy.make_loss()
+    with pytest.raises(TypeError, match="boolean"):
+        energy.make_loss(binds_energy_transport=1)
+    assert type(energy.make_loss(binds_energy_transport=True)) is type(off.make_loss())
+    assert type(off.make_loss(binds_energy_transport=True)) is type(off.make_loss())
+    # GANTrainer is the declared consumer: it builds, evaluates the term and checkpoints it.
+    trainer, results = make_trainer(), []
+    assert type(trainer.loss) is type(make_recipe(weight=0.).make_loss())
+    assert "energy_transport" in run(trainer, 0, 1, results).state_dict()
+    assert results[0]["energy_transport"] > 0
+
+
+def _misgan():
+    from benchmarks.toy_audit import api_model_misgan
+    case = api_model_misgan.list_cases()[0]
+    off = api_model_misgan.task_recipe(case)
+    return api_model_misgan, case, off, off.replace(**ENERGY_ON)
+
+
+@pytest.mark.parametrize("path", ["fixture", "build_case", "api_contract.build"])
+def test_pinned_misgan_model_host_refuses_energy_on_every_entry_path(path):
+    from benchmarks.toy_audit import api_contract
+    host, case, off, on = _misgan()
+    build = {"fixture": lambda recipe: host.MisGANFixture(case, recipe=recipe),
+             "build_case": lambda recipe: host.build_case(host.CASE_ID, recipe=recipe),
+             "api_contract.build": lambda recipe: api_contract.build(
+                 api_contract.discover()[host.CASE_ID], recipe=recipe)}[path]
+    with pytest.raises(ValueError, match="energy_transport_weight"):
+        build(on)
+    # Control: the identical recipe with the objective off still builds.
+    assert build(off).recipe == off
+
+
+@pytest.mark.parametrize("path", ["fixture", "build_case", "api_contract.build"])
+def test_pinned_api_images_word_host_refuses_energy_on_every_entry_path(path):
+    from benchmarks.toy_audit import api_contract, api_images as host
+    build = {"fixture": lambda name: host.WordFixture(device="cpu", seed=0, recipe_name=name, max_steps=1),
+             "build_case": lambda name: host.build_case(host.WORD_CASE_ID, recipe_name=name),
+             "api_contract.build": lambda name: api_contract.build(
+                 api_contract.discover()[host.WORD_CASE_ID], recipe_name=name)}[path]
+    with pytest.raises(ValueError, match="energy_transport_weight"):
+        build("k3p_energy")
+    assert build("k3p").recipe.energy_transport_weight == 0
+
+
+def test_pinned_api_images_conditional_fixture_refuses_energy():
+    from benchmarks.toy_audit import api_images as host
+    case_id = "image-pr61-conditional-transpose12"
+    with pytest.raises(ValueError, match="energy_transport_weight"):
+        host.build_case(case_id, recipe_name="k3p_energy")
+    assert host.build_case(case_id, recipe_name="k3p").trainer is None  # caller-owned loop control
+
+
+def test_api_run_records_pinned_host_refusal_before_any_update(tmp_path):
+    from benchmarks.toy_audit import api_contract, api_images, api_run
+    host, _, _, on = _misgan()
+    cases = api_contract.discover()
+    for case_id, options in ((host.CASE_ID, dict(recipe=on)), (api_images.WORD_CASE_ID, dict(recipe_name="k3p_energy"))):
+        receipt = api_run.run_case(cases[case_id], tmp_path / case_id, steps=1, **options)
+        # ERROR, not BLOCKED: api_run maps only api_contract.UnsupportedRecipeOverrides
+        # to BLOCKED, and that mapping and these hosts' own refusals are pinned.
+        assert receipt["status"] == "ERROR" and receipt["passed"] is False
+        assert receipt["completed_updates"] == 0 and receipt["observations"] == []
+        assert "reproducibility" not in receipt and receipt["recipe"] is None
+        assert "energy_transport_weight" in receipt["failed_bounds"][0]
+
+
+@pytest.mark.parametrize("task_id", ["model_misgan_four_mode", "five_word_joint_smoke",
+                                     "five_word_joint_hold", "five_word_joint_acquisition"])
+def test_forge_blocks_energy_on_the_pinned_caller_owned_tasks(task_id):
+    from copy import deepcopy
+    import json
+    from experiments.forge.api import CapabilityError, task_formulation_context
+    from experiments.forge.preflight import task_preflight
+    from experiments.forge.views import load_tasks
+    tasks = load_tasks(ROOT)
+    k3p = json.loads((ROOT / "configs/forge/ideas/k3p.json").read_text())
+    energy = {**k3p, "id": "k3p-energy-refusal-probe",
+              "recipe_overrides": {**k3p["recipe_overrides"], **ENERGY_ON}}
+    blockers = task_preflight(deepcopy(tasks[task_id]), energy, {}, root=ROOT, tasks=tasks)
+    assert any("energy transport" in b and "unsupported" in b for b in blockers)
+    with pytest.raises(CapabilityError, match="energy transport"):
+        task_formulation_context(energy, tasks[task_id], {"seed": 0})  # the run path refuses too
+    control = task_preflight(deepcopy(tasks[task_id]), k3p, {}, root=ROOT, tasks=tasks)
+    assert not any("energy transport" in b for b in control)
+
+
 # (b) Weight 0 is fully off.
 
 def test_weight_zero_is_fully_off(monkeypatch):

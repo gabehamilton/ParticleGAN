@@ -630,20 +630,31 @@ anything:
 It never reconstructs omitted history. `GANTrainer` is the only consumer. A
 recipe with a positive weight outside its envelope (`model="gan"`,
 `conditioning="scalar"`, `encoder_mode="none"`, `row_policy="independent"`) is
-rejected at construction. Forge rejects it on `public_components` paths. These
-caller-owned toy hosts own their loops and refuse it as an unsupported mechanism
-(BLOCKED): the half-frequency vector hosts, the ring16 BiGAN hosts, the
-conditional MisGAN fixtures in `api_conditionals`, and the cGAN-overlap,
-CycleGAN, Cramer GAN, InfoGAN and PacGAN hosts.
+rejected at construction. Inside the envelope, `Recipe.make_loss()` raises
+`ValueError` for a positive weight unless the caller passes
+`make_loss(binds_energy_transport=True)`. Pass that flag only if your loop adds
+`Recipe.energy_transport_loss` to its G/prior loss and owns the target set,
+generated set, stream and checkpoint state. `GANTrainer` passes it. Weight 0 is
+unaffected. Forge rejects a positive weight on `public_components` paths.
 
-Two caller-owned hosts do **not** refuse it yet, because their sources are
-pinned byte for byte by integrated task cards: the MisGAN model host
-(`benchmarks/toy_audit/api_model_misgan.py`) and the `api_images` joint-word
-host. Both accept a scalar-GAN recipe, so a positive weight passes the recipe
-envelope check, and then their loops never evaluate the objective. Do not run
-an energy recipe on either host: any such result has silently dropped the
-mechanism and must be recorded as BLOCKED, not as an energy-transport result.
-The refusal can be added once a new source-binding layer unpins those files.
+These caller-owned toy hosts own their loops and refuse a positive weight as an
+unsupported mechanism (BLOCKED): the half-frequency vector hosts, the ring16
+BiGAN hosts, the conditional MisGAN fixtures in `api_conditionals`, and the
+cGAN-overlap, CycleGAN, Cramer GAN, InfoGAN and PacGAN hosts.
+
+Three more caller-owned hosts are pinned byte for byte by integrated task cards,
+so they cannot name the field: the MisGAN model host
+(`benchmarks/toy_audit/api_model_misgan.py`), the `api_images` joint-word host
+and the `api_images` conditional image fixtures. The `make_loss` check refuses
+them at construction, before any update, through every entry path: direct
+fixture construction, `build_case`, `api_contract.build`, `api_run` and Forge.
+Forge preflight reports BLOCKED for the `model_misgan_four_mode` and
+`five_word_joint_*` tasks. `api_run` records status `ERROR`, with a
+`ValueError` naming `energy_transport_weight`, and 0 completed updates. It
+cannot record `BLOCKED` because it maps only
+`api_contract.UnsupportedRecipeOverrides` to BLOCKED, and that file and these
+hosts are pinned. Read such a receipt as an unsupported mechanism, never as an
+energy-transport result.
 
 ### Optional vector discriminators
 

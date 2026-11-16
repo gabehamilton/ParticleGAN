@@ -337,7 +337,11 @@ class GANTrainer:
         if getattr(recipe, "generator_gradient_response", "none") != "none":
             from .gradient_response import GradientCoherence
             self._gradient_response = GradientCoherence()
-        self.loss = recipe.make_loss()
+        # step() adds the recipe's energy transport term whenever its weight is
+        # positive. Weight 0 keeps the original call, so Recipe subclasses that
+        # override make_loss (e.g. benchmarks.legacy) are unaffected.
+        self.loss = (recipe.make_loss(binds_energy_transport=True) if recipe.energy_transport_weight
+                     else recipe.make_loss())
         self.prior_regularizer = recipe.make_prior_regularizer(
             weight=1.0 if recipe.prior_regularizer == "vicreg" or recipe.prior_reg > 0 else 0.,
             prior=self.prior, reference=self.prior)
