@@ -519,7 +519,7 @@ class InfoGANAnisotropicFixture:
             self.prior = prior.to(self.device)
         resolved = self._resolve_recipe(recipe)
         if resolved.energy_transport_weight:
-            # This caller-owned loop does not bind Recipe.energy_transport_loss.
+            # This caller-owned loop does not implement energy transport.
             from .api_contract import UnsupportedRecipeOverrides
             raise UnsupportedRecipeOverrides("InfoGAN host does not consume energy_transport_weight "
                                              "(a GANTrainer objective)")

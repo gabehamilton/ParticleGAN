@@ -484,7 +484,7 @@ class CramerGANOverlapFixture:
             self.prior = prior.to(self.device)
         resolved = self._resolve_recipe(recipe, self.prior)
         if resolved.energy_transport_weight:
-            # This caller-owned loop does not bind Recipe.energy_transport_loss.
+            # This caller-owned loop does not implement energy transport.
             from .api_contract import UnsupportedRecipeOverrides
             raise UnsupportedRecipeOverrides("Cramer GAN host does not consume energy_transport_weight "
                                              "(a GANTrainer objective)")

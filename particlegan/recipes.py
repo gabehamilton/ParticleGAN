@@ -1041,20 +1041,26 @@ class Recipe:
         """The selected objective: ``d_loss(real, fake)``, ``g_loss(fake, real=None)``.
 
         With ``energy_transport_weight > 0`` the recipe's G objective also
-        contains ``energy_transport_loss``, which the returned object never
-        evaluates. Only a caller that adds that term to its G/prior loss (and
-        owns its target set, generated set, stream and checkpoint state) may
-        pass ``binds_energy_transport=True``; ``GANTrainer`` does. Every other
-        caller is refused here, before its loop runs, instead of training the
-        recipe without the mechanism. Weight 0 is unaffected.
+        contains the energy-transport mechanism, which the returned object never
+        evaluates: the weighted pairwise term, the seen-target FIFO
+        (``energy_transport_memory``) and the whole-population draw
+        (``energy_transport_population``) on its own checkpointed stream.
+        ``GANTrainer`` is the only implementation of that mechanism and passes
+        ``binds_energy_transport=True``. Another loop may pass it only if it
+        implements the whole mechanism itself; ``energy_transport_loss`` below
+        supplies only the weighted pairwise term. Every other caller is refused
+        here, before its loop runs, instead of training the recipe without the
+        mechanism. Weight 0 is unaffected.
         """
         if type(binds_energy_transport) is not bool:
             raise TypeError("binds_energy_transport must be a boolean")
         if self.energy_transport_weight and not binds_energy_transport:
             raise ValueError("energy_transport_weight > 0 is unsupported by this caller-owned loop: it does not "
-                             "evaluate Recipe.energy_transport_loss, so the mechanism would be silently dropped. "
-                             "GANTrainer consumes it; a loop that binds it passes "
-                             "make_loss(binds_energy_transport=True)")
+                             "implement energy transport (pairwise term, seen-target FIFO and population draw), "
+                             "so the mechanism would be silently dropped. Use GANTrainer, which implements it. "
+                             "A loop that implements the whole mechanism itself passes "
+                             "make_loss(binds_energy_transport=True); Recipe.energy_transport_loss supplies only "
+                             "the weighted pairwise term")
         if self.effective_critic_formulation == "rhbi" or self.rhbi_weight > 0 or self.rhbi_critic_weight > 0:
             from .rhbi import RHBIGANLoss
             return RHBIGANLoss(
@@ -1129,13 +1135,18 @@ class Recipe:
         return weight * kinetic_transport_local_loss(fake, real)
 
     def energy_transport_loss(self, fake, target):
-        """Weighted energy transport from generated ``fake`` to detached ``target`` rows.
+        """Weighted pairwise energy term from generated ``fake`` to detached ``target`` rows.
 
-        ``particlegan.energy_transport`` defines the scale-normalized objective.
-        ``GANTrainer`` supplies the target set (current G-phase batch or its
-        seen-target FIFO) and the generated set (G batch or prior population).
-        Caller-owned loops that enable the weight must bind both themselves
-        and declare it with ``make_loss(binds_energy_transport=True)``.
+        This is only the term ``particlegan.energy_transport`` defines, times
+        ``energy_transport_weight``. It does not implement
+        ``energy_transport_memory`` (the seen-target FIFO) or
+        ``energy_transport_population`` (one draw per prior row on its own
+        stream), and ``GANTrainer`` does not call it: the trainer evaluates
+        ``energy_transport_terms`` on the target and generated sets it owns.
+        Adding this term to a caller-owned loop therefore reproduces the
+        recipe only when both fields are at their defaults (0 and False) and
+        the loop also owns the stream and checkpoint state; only then may it
+        declare ``make_loss(binds_energy_transport=True)``.
         Returns an exact zero without evaluating anything at weight 0.
         """
         weight = float(self.energy_transport_weight)

@@ -584,7 +584,9 @@ coincident points. Because the smoothing scales with `s`, the objective is
 invariant to a common rescaling of `x` and `y`. The constant `y`–`y` term of the
 energy distance is omitted, not computed. `y` is detached; gradients reach G and
 prior rows only through `x`, by ordinary autograd. `Recipe.energy_transport_loss(fake,
-target)` returns the weighted term (an exact zero at weight 0) for caller-owned loops.
+target)` returns only this weighted pairwise term (an exact zero at weight 0). It does
+not implement the seen-target FIFO or the population draw below, and `GANTrainer`
+does not call it.
 
 `GANTrainer` binds both sets inside the G phase:
 
@@ -632,9 +634,13 @@ recipe with a positive weight outside its envelope (`model="gan"`,
 `conditioning="scalar"`, `encoder_mode="none"`, `row_policy="independent"`) is
 rejected at construction. Inside the envelope, `Recipe.make_loss()` raises
 `ValueError` for a positive weight unless the caller passes
-`make_loss(binds_energy_transport=True)`. Pass that flag only if your loop adds
-`Recipe.energy_transport_loss` to its G/prior loss and owns the target set,
-generated set, stream and checkpoint state. `GANTrainer` passes it. Weight 0 is
+`make_loss(binds_energy_transport=True)`. `GANTrainer` is the only implementation of the
+whole mechanism and passes it. Pass that flag from another loop only if it
+implements the whole mechanism: the pairwise term, the seen-target FIFO
+(`energy_transport_memory`), the population draw (`energy_transport_population`)
+and their stream and checkpoint state. `Recipe.energy_transport_loss` supplies
+only the pairwise term, so on its own it reproduces the recipe only when memory is
+0 and population is off. Weight 0 is
 unaffected. Forge rejects a positive weight on `public_components` paths.
 
 These caller-owned toy hosts own their loops and refuse a positive weight as an

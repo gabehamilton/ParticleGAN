@@ -559,7 +559,7 @@ class _PacGANBaseFixture:
         else:
             raise TypeError(f"Expected Recipe or str, got {type(recipe)!r}")
         if resolved.energy_transport_weight:
-            # This caller-owned loop does not bind Recipe.energy_transport_loss.
+            # This caller-owned loop does not implement energy transport.
             from .api_contract import UnsupportedRecipeOverrides
             raise UnsupportedRecipeOverrides("PacGAN host does not consume energy_transport_weight "
                                              "(a GANTrainer objective)")

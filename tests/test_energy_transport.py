@@ -221,8 +221,8 @@ def test_energy_transport_is_refused_outside_the_gantrainer_envelope():
     ("api_pacgan", "api-pacgan-unequal-mass"),
 ])
 def test_caller_owned_scalar_gan_hosts_block_instead_of_dropping_energy(module, case_id):
-    # These hosts own their training loops and do not bind
-    # Recipe.energy_transport_loss; a k3p_energy request is BLOCKED.
+    # These hosts own their training loops and do not implement energy
+    # transport; a k3p_energy request is BLOCKED.
     import importlib
     from benchmarks.toy_audit.api_contract import UnsupportedRecipeOverrides
     host = importlib.import_module(f"benchmarks.toy_audit.{module}")

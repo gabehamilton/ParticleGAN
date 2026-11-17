@@ -72,14 +72,17 @@ and 2.96 at 8σ, against the 1.5 gate. A single stray at 5σ already fails the g
 The energy distance is E = (2·mean ρ(x−y) − mean ρ(x−x′)) / s. It is computed from one generated draw per prior row (the
 whole 256-atom population) to a FIFO of the 4096 most recently seen G-phase real rows. Here ρ is a smoothed Euclidean
 norm and s is the detached target scale. E is an exact, repulsive transport objective on the G/prior loss, owned by the recipe.
-- It fixes mass allocation: mass_tv falls from the round-1 locked .16 to .017.
+- Mass: mass_tv falls from the round-1 locked .16 to .017. This is not specific to energy: kinetic-transport configs without
+  energy already reached .025-.026 (leaderboard rows 16 and 27). Against the best round-1 config (row 16), the energy-specific
+  gain is strays and within-mode law: worst-of-5 max_cov 26.0 → 2.30 and radial KS .306 → .201.
 - In the selected run (weight 300, memory 4096), transit atoms are gone from the final draws: 0 of 4096 samples lie more
   than .5 from a centre, against 6.3% with energy off. This is measured for that run only. Other high weights still left
   strays or halos: weight 100 without kinetic terms has max_cov 71.2 (one stray), and weight 1000 has max_cov 8.05 (4.58
   with kinetic terms). Without seeds, the weights cannot be ranked against each other.
-- What remains is within-mode quantization. With ~32 atoms per mode, energy-optimal free atoms reach a radial KS of about .13
-  (witness), and the trained preset sits at .15-.20. The gate takes the worst mode and the worst of 5 checks, so a pure-atom
-  law trained by this energy objective did not pass. That is a limit of the objective, not of pure atoms: the
+- What remains is within-mode quantization. With ~32 atoms per mode, one free-atom energy run (witness: 1200 Adam
+  steps from one initialization) reaches a radial KS of about .13, and the trained preset sits at .15-.20. That .13 is one
+  optimizer endpoint, not a proven floor of the objective. The gate takes the worst mode and the worst of 5 checks, so a pure-atom
+  law trained by this energy objective did not pass. That is not a limit of pure atoms: the
   hand-stratified 256-atom witness passes (rate .99, KS .066). Pure-atom placement mechanisms that reach quantile-like
   atoms (for example, quantile-aware atoms) are not ruled out.
 - A continuous served law (DV12) reached KS .155 but kept a 3-6σ halo (max_cov 12.2). That is a different served-law
@@ -109,7 +112,7 @@ step-42 failed bounds were seen before the identical, deterministic relaunch, an
 - **Energy off** (weight 0, same schedule delta, run once):
   - ring8 FAIL. hq .926, tv .191 (locked from update 300), cov .80..96.1, KS .643.
   - gaussian1d PASS 5/5 (14/24) with weaker margins.
-  - So gaussian1d does not discriminate the energy mechanism. ring8 and gaussian2d carry the mechanism evidence.
+  - So gaussian1d does not discriminate the energy mechanism. Only ring8 carries mechanism evidence: gaussian2d has no energy-off control, so its holdout PASS does not attribute to the mechanism either.
 - **Off identity:** at weight 0, 12-update state digests are bit-identical with and without the energy commits for
   k3p particles, k3p MoG, bispf_optimized and atlas. `tests/test_energy_transport.py` keeps this check on develop.
 - **Forbidden fallback** (7 receipts): every receipt checks each of the following.
@@ -255,7 +258,8 @@ tuning-override surface (d447d1cdd, d7ce31e41) is not carried.
   fields at their defaults, as they already do for the rhbi fields. The bcap develop-compatibility probe declares them as
   later inactive defaults (`tests/conftest.py`), the same way it declares the rhbi fields. Forge refuses a positive energy
   weight on that path.
-- **Inventory readouts hidden.** Any library source change drops the inventory's current-source Tier 1 readout table
+- **Inventory readouts hidden (develop branch only).** On master, this port's base, the inventory has no current-source
+  readout table, so nothing is withheld. On develop, any library source change drops the inventory's current-source Tier 1 readout table
   (`679a26b257b6`, including RHBI 15/16 with 1 fail, plus nine 0/16 not-run rows) until those readouts are refreshed on
   the new source. The inventory itself carries no note about this. It is a generated view that must match its reducer,
   and the publication pins that reducer's sha256, so a hand-written note would fail the sync check. The records are
@@ -266,8 +270,9 @@ tuning-override surface (d447d1cdd, d7ce31e41) is not carried.
 ## Recommendations
 
 1. Do not adopt `k3p_energy` as a default or claim superiority. Keep it as the declared-delta native baseline FAIL for ring8.
-2. Stop tuning the pure-atom energy lineage. Its remaining KS gap (.05-.10) is the floor this energy objective reaches
-   (energy-optimal free atoms sit at about .13 against the .10 gate), not a tuning gap. It is not a floor of pure atoms:
+2. Stop tuning the pure-atom energy lineage. Its remaining KS gap (.05-.10) looks like a property of the objective rather
+   than a tuning gap: the one free-atom energy run reached about .13 against the .10 gate, and the trained preset .15-.20.
+   That run is one optimizer endpoint, not a proven floor. The gap is not a floor of pure atoms either:
    hand-stratified atoms pass, so a recipe-owned placement mechanism that reaches quantile-like atoms is still a
    candidate, with its own declared delta and evidence identity.
 3. Next mechanism: a recipe-owned continuous served law that works on k3p. Both k3p + DV12 attempts currently ERROR before any measurement (off-board). It needs its own capability, declared delta and evidence identity, measured as a separate served-law cohort.
